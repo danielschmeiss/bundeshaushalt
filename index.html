@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Bundeshaushalt – Transparenz für alle</title>
   <meta name="description" content="Interaktive Visualisierung des deutschen Bundeshaushalts 2020–2026">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -20,6 +20,7 @@
       --sh:    0 1px 3px rgba(0,0,0,.08),0 1px 8px rgba(0,0,0,.04);
     }
     *{box-sizing:border-box;margin:0;padding:0}
+    button,a,select,input,label{touch-action:manipulation}
     body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
 
     /* ── Header ── */
@@ -174,11 +175,85 @@
     .stream-leg-item:hover{background:var(--bg)}
     .stream-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
     /* ── Responsive ── */
+    @media(max-width:768px){
+      .chart-box.h520{height:380px}
+    }
     @media(max-width:640px){
-      header{padding:1rem}
-      main{padding:1rem}
-      nav.tabs{padding:0 .75rem}
+      /* Header */
+      header{padding:.875rem 1rem;gap:1rem}
+      header h1{font-size:1.15rem}
+      header p{display:none}
       .header-badge{display:none}
+
+      /* Nav tabs: hide scrollbar, tighter buttons */
+      nav.tabs{padding:0 .25rem;scrollbar-width:none}
+      nav.tabs::-webkit-scrollbar{display:none}
+      nav.tabs button{padding:.7rem .75rem;font-size:.78rem}
+
+      /* Layout */
+      main{padding:.875rem}
+
+      /* Section headers */
+      .sec-head{margin-bottom:1rem}
+      .sec-head h1{font-size:1.15rem}
+      .sec-head p{font-size:.8rem}
+
+      /* Cards */
+      .card{padding:1rem}
+      .card-grid{gap:.75rem;margin-bottom:1rem}
+      .chart-card{padding:1rem;margin-bottom:1rem}
+
+      /* Chart heights */
+      .chart-box.h300{height:220px}
+      .chart-box.h380{height:260px}
+      .chart-box.h520{height:300px}
+
+      /* Stack chart title + controls vertically */
+      .chart-head{flex-direction:column;align-items:flex-start;gap:.5rem;margin-bottom:1rem}
+
+      /* Stats */
+      .stat{padding:1rem 1.1rem}
+      .stat-value{font-size:1.35rem}
+
+      /* Touch-friendly buttons */
+      .btn{padding:.6rem .85rem;font-size:.82rem}
+      .ypill{padding:.5rem .85rem;font-size:.82rem;min-height:36px}
+      select,input[type=text]{padding:.55rem .75rem;font-size:.9rem}
+
+      /* Tables */
+      table{font-size:.76rem}
+      th{padding:.4rem .5rem}
+      td{padding:.4rem .5rem}
+
+      /* EP checkbox grid: 1 column */
+      .ep-grid{grid-template-columns:1fr}
+
+      /* Ministerium-Zeitverlauf: select full width */
+      #dt-ep-sel{min-width:0;width:100%}
+
+      /* Heatmap: narrow sticky column */
+      .hm-th-name{min-width:120px}
+      .hm-name{max-width:140px}
+      .hm-cell{min-width:52px;font-size:.7rem;padding:.32rem .25rem}
+
+      /* Search bar full-width input */
+      .search-bar{flex-direction:column}
+      .search-bar input[type=text]{width:100%;min-width:0}
+      .search-bar select{width:100%}
+
+      /* Einnahmen descriptions: reduce padding */
+      .ein-kat-desc{padding:.7rem .875rem}
+
+      /* Footer */
+      footer{padding:1.5rem 1rem;font-size:.72rem}
+    }
+    /* Panorama controls hint: don't auto-push on mobile */
+    @media(max-width:640px){
+      #tab-panorama .card > div > div:last-child{margin-left:0!important}
+    }
+    @media(max-width:400px){
+      nav.tabs button{padding:.65rem .6rem;font-size:.72rem}
+      .stat-value{font-size:1.2rem}
     }
   </style>
 </head>
