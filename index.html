@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bundeshaushalt – Transparenz für alle</title>
+  <meta name="description" content="Interaktive Visualisierung des deutschen Bundeshaushalts 2020–2026">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --black: #1a1a1a;
+      --red:   #c1121f;
+      --gold:  #c9920a;
+      --bg:    #f4f3ef;
+      --card:  #ffffff;
+      --border:#e0ddd6;
+      --text:  #1a1a1a;
+      --muted: #6b6860;
+      --r:     8px;
+      --sh:    0 1px 3px rgba(0,0,0,.08),0 1px 8px rgba(0,0,0,.04);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+    /* ── Header ── */
+    header{background:var(--black);color:#fff;padding:1.25rem 2rem;display:flex;align-items:center;gap:1.25rem}
+    .flag{width:36px;height:24px;border-radius:2px;overflow:hidden;display:flex;flex-direction:column;flex-shrink:0}
+    .flag div{flex:1}
+    .fb{background:#1a1a1a;border-bottom:1px solid #333}
+    .fr{background:var(--red)}
+    .fg{background:#f0c040}
+    header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+    header p{font-size:.8rem;color:#aaa;margin-top:.1rem}
+    .header-badge{margin-left:auto;background:#333;border-radius:4px;padding:.25rem .6rem;font-size:.7rem;color:#aaa;white-space:nowrap}
+
+    /* ── Tabs ── */
+    nav.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 2rem;overflow-x:auto;gap:.25rem}
+    nav.tabs button{padding:.85rem 1.1rem;border:none;background:none;font-size:.875rem;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .15s,border-color .15s}
+    nav.tabs button.active{color:var(--red);border-bottom-color:var(--red);font-weight:600}
+    nav.tabs button:hover:not(.active){color:var(--text)}
+
+    /* ── Layout ── */
+    main{max-width:1200px;margin:0 auto;padding:2rem}
+    section{display:none}
+    section.active{display:block}
+
+    /* ── Cards ── */
+    .card{background:var(--card);border-radius:var(--r);padding:1.5rem;box-shadow:var(--sh)}
+    .card+.card{margin-top:1.25rem}
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.25rem}
+    .stat{background:var(--card);border-radius:var(--r);padding:1.2rem 1.4rem;box-shadow:var(--sh);border-left:3px solid transparent}
+    .stat.red{border-left-color:var(--red)}
+    .stat.gold{border-left-color:var(--gold)}
+    .stat.gray{border-left-color:#ccc}
+    .stat-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+    .stat-value{font-size:1.6rem;font-weight:700;line-height:1.1;margin:.3rem 0 .15rem}
+    .stat-sub{font-size:.76rem;color:var(--muted)}
+    .stat-value.c-red{color:var(--red)}
+    .stat-value.c-gold{color:var(--gold)}
+    .stat-value.c-gray{color:#999}
+
+    /* ── Charts ── */
+    .chart-card{background:var(--card);border-radius:var(--r);padding:1.5rem;box-shadow:var(--sh);margin-bottom:1.25rem}
+    .chart-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem}
+    .chart-head h2{font-size:.95rem;font-weight:600}
+    .chart-box{position:relative}
+    .chart-box.h300{height:300px}
+    .chart-box.h380{height:380px}
+    .chart-box.h520{height:520px}
+
+    /* ── Section header ── */
+    .sec-head{margin-bottom:1.5rem}
+    .sec-head h1{font-size:1.4rem;font-weight:700}
+    .sec-head p{color:var(--muted);font-size:.875rem;margin-top:.25rem}
+
+    /* ── Controls ── */
+    .controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+    select,input[type=text]{padding:.45rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;color:var(--text);font-family:inherit}
+    select:focus,input[type=text]:focus{outline:none;border-color:var(--red)}
+    .btn{padding:.45rem .9rem;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.85rem;cursor:pointer;color:var(--text);font-family:inherit;transition:background .1s}
+    .btn:hover{background:var(--bg)}
+    .btn.act{background:var(--red);color:#fff;border-color:var(--red)}
+    .btn.act:hover{background:#a50f1a}
+    .btn-row{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+    .btn-row .btn{border:none;border-radius:0;border-right:1px solid var(--border)}
+    .btn-row .btn:last-child{border-right:none}
+
+    /* ── Year pills ── */
+    .year-pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem}
+    .ypill{padding:.4rem .85rem;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:.85rem;cursor:pointer;font-weight:500;transition:all .1s}
+    .ypill.act{background:var(--red);color:#fff;border-color:var(--red)}
+    .ypill:hover:not(.act){border-color:#999}
+
+    /* ── EP checkboxes ── */
+    .ep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.35rem}
+    .ep-label{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:6px;cursor:pointer;font-size:.8rem;user-select:none;transition:background .1s}
+    .ep-label:hover{background:var(--bg)}
+    .ep-label input[type=checkbox]{width:14px;height:14px;accent-color:var(--red);cursor:pointer}
+    .ep-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+    .ep-special{opacity:.65;font-style:italic}
+
+    /* ── Table ── */
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    th{padding:.55rem .75rem;text-align:left;background:var(--bg);border-bottom:1px solid var(--border);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+    td{padding:.55rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#fafaf7}
+    td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+    td.mono{font-family:ui-monospace,monospace;font-size:.75rem;color:var(--muted)}
+
+    /* ── Badges ── */
+    .tag{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.7rem;font-weight:700;letter-spacing:.04em}
+    .tag-a{background:#fde8e8;color:#b00}
+    .tag-e{background:#fef4d9;color:#7a5500}
+    .ep-tag{display:inline-block;padding:.15rem .4rem;border-radius:4px;font-size:.7rem;font-weight:700}
+
+    /* ── Info box ── */
+    .info-box{background:#fffbee;border:1px solid #e8d58a;border-radius:6px;padding:.75rem 1rem;font-size:.82rem;color:#6b5000;margin-bottom:1.25rem}
+    .info-box b{font-weight:600}
+
+    /* ── Search ── */
+    .search-bar{display:flex;gap:.6rem;margin-bottom:.75rem;flex-wrap:wrap}
+    .search-bar input[type=text]{flex:1;min-width:200px;font-size:.9rem}
+    .search-info{color:var(--muted);font-size:.82rem;margin-bottom:.75rem}
+    .more-hint{text-align:center;color:var(--muted);font-size:.82rem;margin-top:.75rem;display:none}
+
+    /* ── Loading ── */
+    #loading-state{text-align:center;padding:5rem 2rem;color:var(--muted)}
+    .spin{display:inline-block;width:32px;height:32px;border:3px solid #ddd;border-top-color:var(--red);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:1rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .err-box{color:var(--red);font-size:.9rem;padding:.75rem;background:#fde8e8;border-radius:6px;margin-top:.75rem}
+    .code-hint{font-family:ui-monospace,monospace;background:#f0f0f0;padding:.2rem .5rem;border-radius:4px;font-size:.85rem}
+
+    /* ── Footer ── */
+    footer{text-align:center;padding:2rem;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border);margin-top:1rem}
+    footer a{color:var(--red);text-decoration:none}
+    footer a:hover{text-decoration:underline}
+
+    /* ── Einnahmen category descriptions ── */
+    .ein-kat-desc{background:var(--bg);border-radius:6px;padding:.85rem 1rem;border-left:3px solid #ccc}
+    .ein-kat-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+    .ein-kat-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+    .ein-kat-desc p{font-size:.8rem;color:var(--muted);line-height:1.55}
+    .ein-kat-desc p b,.ein-kat-desc p em{color:var(--text)}
+
+    /* ── Sortable table headers ── */
+    th.sortable{cursor:pointer;user-select:none}
+    th.sortable:hover{color:var(--text)}
+    th.sortable::after{content:' ↕';opacity:.35}
+    th.sort-asc::after{content:' ↑';opacity:1}
+    th.sort-desc::after{content:' ↓';opacity:1}
+
+    /* ── Info tooltip ── */
+    .tip-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e0ddd6;color:#6b6860;font-size:.65rem;font-weight:700;font-style:normal;cursor:help;margin-left:4px;vertical-align:middle;flex-shrink:0;line-height:1}
+    .tip-icon:hover{background:#c9c6be}
+    #tip-popup{position:fixed;background:#1a1a1a;color:#fff;font-size:.78rem;font-weight:400;padding:.55rem .75rem;border-radius:7px;max-width:290px;line-height:1.5;pointer-events:none;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.35);display:none;text-align:left}
+
+    /* ── Heatmap ── */
+    .hm-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .hm-table{border-collapse:collapse;font-size:.75rem;white-space:nowrap}
+    .hm-table th{padding:.45rem .5rem;background:var(--bg);border-bottom:2px solid var(--border);color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;text-align:center}
+    .hm-table th.hm-th-name{text-align:left;min-width:190px;position:sticky;left:0;z-index:1;background:var(--bg)}
+    .hm-name{padding:.38rem .6rem;position:sticky;left:0;background:#fff;z-index:1;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.4rem;max-width:220px}
+    .hm-name:hover{background:#fafaf7}
+    .hm-cell{padding:.38rem .4rem;text-align:center;border:2px solid #fff;border-bottom:1px solid var(--border);font-weight:700;min-width:68px;cursor:default;transition:filter .1s}
+    .hm-cell:hover{filter:brightness(.9)}
+    .hm-cell.hm-base{font-weight:600;font-size:.72rem;border-right:3px solid var(--border)}
+    .hm-legend{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--muted);margin-top:.75rem;flex-wrap:wrap}
+    .hm-legend-swatch{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:middle}
+    /* ── Stream legend ── */
+    .stream-legend{display:flex;flex-wrap:wrap;gap:.35rem .6rem;margin-top:.75rem}
+    .stream-leg-item{display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;padding:.15rem .3rem;border-radius:4px;transition:background .1s}
+    .stream-leg-item:hover{background:var(--bg)}
+    .stream-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+    /* ── Responsive ── */
+    @media(max-width:640px){
+      header{padding:1rem}
+      main{padding:1rem}
+      nav.tabs{padding:0 .75rem}
+      .header-badge{display:none}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="flag"><div class="fb"></div><div class="fr"></div><div class="fg"></div></div>
+  <div>
+    <h1>Bundeshaushalt</h1>
+    <p>Haushaltsplan der Bundesrepublik Deutschland · 2020–2026</p>
+  </div>
+  <div class="header-badge">Alle Angaben in Tausend Euro · Sollwerte</div>
+</header>
+
+<nav class="tabs">
+  <button class="active" onclick="switchTab('uebersicht')">Übersicht</button>
+  <button onclick="switchTab('ministerien')">Ministerienvergleich</button>
+  <button onclick="switchTab('jahresdetails')">Jahresdetails</button>
+  <button onclick="switchTab('suche')">Suche</button>
+  <button onclick="switchTab('detail')">Ministerium-Zeitverlauf</button>
+  <button onclick="switchTab('panorama')">Panorama</button>
+  <button onclick="switchTab('einnahmen')">Einnahmen</button>
+</nav>
+
+<div id="loading-state">
+  <div class="spin"></div>
+  <p>Daten werden geladen…</p>
+</div>
+
+<main id="app" style="display:none">
+
+  <!-- ══════════════════════════════════════════════════════ TAB 1: ÜBERSICHT -->
+  <section id="tab-uebersicht" class="active">
+    <div class="sec-head">
+      <h1>Haushalt im Überblick</h1>
+      <p>Ausgaben und Einnahmen des Bundes 2020–2026 · Beträge in Milliarden Euro (Sollwerte)</p>
+    </div>
+    <div class="card-grid" id="stats-cards"></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2>Ausgaben nach Jahr</h2>
+        <div class="controls">
+          <div class="btn-row">
+            <button class="btn act" id="ov-abs" onclick="setOvMode('abs')">Absolut</button>
+            <button class="btn" id="ov-rel" onclick="setOvMode('rel')">vs. 2020</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-box h300"><canvas id="chart-main"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2>Ausgaben nach Ministerium</h2>
+        <div class="controls">
+          <label style="font-size:.82rem;color:var(--muted)">Jahr:
+            <select id="ov-year-sel" onchange="renderOvEP()"></select>
+          </label>
+        </div>
+      </div>
+      <div class="info-box">
+        <b>EP 32 Bundesschuld</b> und <b>EP 60 Allgemeine Finanzverwaltung</b> umfassen Schuldenverwaltung, Steuereinnahmen-Disposition und interne Transfers – daher oft deutlich größere Volumina als Fachministerien.
+      </div>
+      <div class="chart-box h520"><canvas id="chart-ep-year"></canvas></div>
+    </div>
+    <div class="card">
+      <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1rem">Jahresübersicht</h2>
+      <div class="tbl-wrap">
+        <table id="year-table">
+          <thead><tr>
+            <th>Jahr</th>
+            <th style="text-align:right">Ausgaben</th>
+            <th style="text-align:right">Einnahmen</th>
+            <th style="text-align:right">Differenz</th>
+            <th style="text-align:right">Δ vs. Vorjahr</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TAB 2: MINISTERIEN -->
+  <section id="tab-ministerien">
+    <div class="sec-head">
+      <h1>Ministerienvergleich</h1>
+      <p>Entwicklung der Ausgaben ausgewählter Einzelpläne über die Zeit</p>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem">
+        <div class="controls">
+          <div class="btn-row">
+            <button class="btn act" id="mode-a" onclick="setMiniMode('a')">Ausgaben</button>
+            <button class="btn" id="mode-e" onclick="setMiniMode('e')">Einnahmen</button>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn" onclick="selectTop5()">Top 5</button>
+          <button class="btn" onclick="selectAll()">Alle</button>
+          <button class="btn" onclick="selectNone()">Keine</button>
+        </div>
+      </div>
+      <div class="ep-grid" id="ep-checkboxes"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2 id="mini-title">Ausgaben der ausgewählten Ministerien</h2>
+      </div>
+      <div class="chart-box h380"><canvas id="chart-mini"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TAB 3: JAHRESDETAILS -->
+  <section id="tab-jahresdetails">
+    <div class="sec-head">
+      <h1>Jahresdetails</h1>
+      <p>Alle Einzelpläne und ihre Ansätze im ausgewählten Haushaltsjahr</p>
+    </div>
+    <div class="year-pills" id="year-pills"></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2 id="jd-chart-title">Ausgaben nach Einzelplan</h2>
+        <div class="controls">
+          <div class="btn-row">
+            <button class="btn act" id="jd-mode-a" onclick="setJdMode('a')">Ausgaben</button>
+            <button class="btn" id="jd-mode-e" onclick="setJdMode('e')">Einnahmen</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-box h520"><canvas id="chart-jd"></canvas></div>
+    </div>
+    <div class="card">
+      <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1rem" id="jd-table-title">Alle Einzelpläne</h2>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>EP</th><th>Bezeichnung</th>
+            <th style="text-align:right">Ausgaben</th>
+            <th style="text-align:right">Einnahmen</th>
+            <th style="text-align:right">Anteil Ausg.</th>
+          </tr></thead>
+          <tbody id="jd-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ TAB 4: SUCHE -->
+  <section id="tab-suche">
+    <div class="sec-head">
+      <h1>Haushaltspositionen suchen</h1>
+      <p>Einzelne Titel des Bundeshaushalts nach Bezeichnung durchsuchen</p>
+    </div>
+    <div id="suche-loading" style="display:none;text-align:center;padding:2rem;color:var(--muted)">
+      <div class="spin"></div><p>Titeldaten werden geladen (ca. 5 MB)…</p>
+    </div>
+    <div id="suche-ui" style="display:none">
+      <div class="search-bar">
+        <input type="text" id="search-q" placeholder="Suchbegriff (mind. 3 Zeichen)…" oninput="onSearch()">
+        <select id="search-year" onchange="onSearch()">
+          <option value="">Alle Jahre</option>
+        </select>
+        <div class="btn-row">
+          <button class="btn act" id="sf-all" onclick="setSF('all')">Alle</button>
+          <button class="btn" id="sf-a"   onclick="setSF('a')">Ausgaben</button>
+          <button class="btn" id="sf-e"   onclick="setSF('e')">Einnahmen</button>
+        </div>
+      </div>
+      <p class="search-info" id="search-info">Bitte Suchbegriff eingeben.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead id="search-thead"></thead>
+          <tbody id="search-tbody"></tbody>
+        </table>
+      </div>
+      <p class="more-hint" id="search-more"></p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TAB 5: PANORAMA -->
+  <section id="tab-panorama">
+    <div class="sec-head">
+      <h1>Panorama</h1>
+      <p>Gesamtbild des Bundeshaushalts auf einen Blick – Zusammensetzung und Veränderungen 2020–2026</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+        <div>
+          <label class="stat-label" style="display:block;margin-bottom:.4rem">Darstellung</label>
+          <div class="btn-row">
+            <button class="btn act" id="pn-abs" onclick="setPnMode('abs')">Absolut</button>
+            <button class="btn"     id="pn-pct" onclick="setPnMode('pct')">Anteil&thinsp;%</button>
+          </div>
+        </div>
+        <div>
+          <label class="stat-label" style="display:block;margin-bottom:.4rem">Sonderpositionen</label>
+          <div class="btn-row">
+            <button class="btn act" id="pn-sp-off" onclick="setPnSp(false)">ohne EP&thinsp;32/60</button>
+            <button class="btn"     id="pn-sp-on"  onclick="setPnSp(true)">alle inkl.</button>
+          </div>
+        </div>
+        <div style="margin-left:auto;font-size:.78rem;color:var(--muted);max-width:340px;line-height:1.4">
+          EP&thinsp;32 Bundesschuld &amp; EP&thinsp;60 Allg. Finanzverwaltung werden standardmäßig ausgeblendet, da ihr Volumen die übrigen Ministerien überdeckt.
+        </div>
+      </div>
+    </div>
+
+    <!-- Streamgraph -->
+    <div class="chart-card" style="margin-bottom:1.25rem">
+      <div class="chart-head">
+        <h2 id="pn-stream-title">Haushaltsstruktur im Zeitverlauf</h2>
+        <span style="font-size:.78rem;color:var(--muted)">Tooltip: über Fläche fahren</span>
+      </div>
+      <div class="chart-box h380"><canvas id="chart-stream"></canvas></div>
+      <div class="stream-legend" id="stream-legend"></div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="card">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+        <h2 style="font-size:.95rem;font-weight:600" id="pn-hm-title">Veränderungen im Jahresvergleich (Ausgaben)</h2>
+        <span style="font-size:.75rem;color:var(--muted)">Farbskala: <span style="color:#b71c1c">■</span> gestiegen &nbsp; <span style="color:#1b5e20">■</span> gesunken</span>
+      </div>
+      <div class="hm-wrap">
+        <table class="hm-table" style="width:100%">
+          <thead id="hm-thead"></thead>
+          <tbody id="hm-tbody"></tbody>
+        </table>
+      </div>
+      <div class="hm-legend">
+        <span>Farbintensität:</span>
+        <span class="hm-legend-swatch" style="background:hsl(0,10%,93%)"></span><span>&lt;5%</span>
+        <span class="hm-legend-swatch" style="background:hsl(0,55%,78%)"></span><span>+15%</span>
+        <span class="hm-legend-swatch" style="background:hsl(0,80%,50%)"></span><span>+40%+</span>
+        &nbsp;&nbsp;
+        <span class="hm-legend-swatch" style="background:hsl(130,45%,75%)"></span><span>−15%</span>
+        <span class="hm-legend-swatch" style="background:hsl(130,65%,38%)"></span><span>−40%+</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TAB 6: DETAIL -->
+  <section id="tab-detail">
+    <div class="sec-head">
+      <h1>Ministerium-Zeitverlauf</h1>
+      <p>Entwicklung der Haushaltspositionen innerhalb eines Ministeriums 2020–2026</p>
+    </div>
+    <div id="detail-loading" style="display:none;text-align:center;padding:2rem;color:var(--muted)">
+      <div class="spin"></div><p>Detaildaten werden geladen…</p>
+    </div>
+    <div id="detail-ui" style="display:none">
+      <!-- Controls -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+          <div>
+            <label style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:block;margin-bottom:.4rem">Ministerium</label>
+            <select id="dt-ep-sel" onchange="onDtEP()" style="min-width:280px;font-size:.9rem;padding:.5rem .75rem"></select>
+          </div>
+          <div>
+            <label style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:block;margin-bottom:.4rem">Ansicht</label>
+            <div class="btn-row">
+              <button class="btn act" id="dt-view-art" onclick="setDtView('art')">Ausgabenarten</button>
+              <button class="btn" id="dt-view-kap" onclick="setDtView('kap')">Kapitel</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:block;margin-bottom:.4rem">Größe</label>
+            <div class="btn-row">
+              <button class="btn act" id="dt-mode-a" onclick="setDtMode('a')">Ausgaben</button>
+              <button class="btn" id="dt-mode-e" onclick="setDtMode('e')">Einnahmen</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:block;margin-bottom:.4rem">Darstellung</label>
+            <div class="btn-row">
+              <button class="btn act" id="dt-pct-abs" onclick="setDtPct(false)">Absolut</button>
+              <button class="btn" id="dt-pct-rel" onclick="setDtPct(true)">Anteil %</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ausgabenarten: stacked bar -->
+      <div id="dt-art-section">
+        <div class="chart-card">
+          <div class="chart-head">
+            <h2 id="dt-art-title">Ausgabenstruktur im Zeitverlauf</h2>
+            <span style="font-size:.78rem;color:var(--muted)">Gestapelt nach Haushaltsart</span>
+          </div>
+          <div class="chart-box h380"><canvas id="chart-dt-art"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Kapitel: checkboxes + line chart -->
+      <div id="dt-kap-section" style="display:none">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+            <span style="font-size:.85rem;font-weight:600;color:var(--muted)">Kapitel auswählen</span>
+            <div class="controls">
+              <button class="btn" onclick="dtSelectTop(6)">Top 6</button>
+              <button class="btn" onclick="dtSelectAllKap()">Alle</button>
+              <button class="btn" onclick="dtSelectNoneKap()">Keine</button>
+            </div>
+          </div>
+          <div class="ep-grid" id="dt-kap-checks"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head">
+            <h2 id="dt-kap-title">Kapitel im Zeitverlauf</h2>
+          </div>
+          <div class="chart-box h380"><canvas id="chart-dt-kap"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Table: Kapitel × Jahr -->
+      <div class="card" style="margin-top:1.25rem">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1rem" id="dt-table-title">Kapitel im Detail</h2>
+        <div class="tbl-wrap">
+          <table id="dt-table">
+            <thead id="dt-thead"></thead>
+            <tbody id="dt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TAB 7: EINNAHMEN -->
+  <section id="tab-einnahmen">
+    <div class="sec-head">
+      <h1>Einnahmen</h1>
+      <p>Woher kommt das Geld? Steuerquellen, Kredite und andere Einnahmen 2020–2026</p>
+    </div>
+    <div id="ein-loading" style="text-align:center;padding:3rem;color:var(--muted)">
+      <div class="spin"></div><p>Einnahmen-Daten werden geladen…</p>
+    </div>
+    <div id="ein-ui" style="display:none">
+      <div class="card-grid" id="ein-stats"></div>
+
+      <!-- Stacked bar: Einnahmen-Kategorien über Jahre -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>Einnahmen nach Kategorie</h2>
+          <div class="controls">
+            <div class="btn-row">
+              <button class="btn act" id="ein-abs-btn" onclick="setEinMode('abs')">Absolut</button>
+              <button class="btn"     id="ein-pct-btn" onclick="setEinMode('pct')">Anteil&thinsp;%</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-box h380"><canvas id="chart-ein-kat"></canvas></div>
+      </div>
+
+      <!-- Top-Einnahmen: line chart + heatmap -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>Wichtigste Einnahmearten im Zeitverlauf</h2>
+          <div class="controls">
+            <div class="btn-row">
+              <button class="btn act" id="ein-top-line-btn" onclick="setEinTopView('line')">Liniendiagramm</button>
+              <button class="btn"     id="ein-top-hm-btn"   onclick="setEinTopView('heatmap')">Heatmap</button>
+            </div>
+          </div>
+        </div>
+        <div id="ein-top-line-wrap"><div class="chart-box h380"><canvas id="chart-ein-top"></canvas></div></div>
+        <div id="ein-top-hm-wrap" style="display:none">
+          <div class="hm-wrap">
+            <table class="hm-table">
+              <thead id="ein-top-hm-thead"></thead>
+              <tbody id="ein-top-hm-tbody"></tbody>
+            </table>
+          </div>
+          <div class="hm-legend" style="margin-top:.75rem">
+            <span class="hm-legend-swatch" style="background:hsl(0,85%,44%)"></span> starker Anstieg
+            <span class="hm-legend-swatch" style="background:hsl(0,40%,78%)" style="margin-left:.5rem"></span> leichter Anstieg
+            <span class="hm-legend-swatch" style="background:hsl(0,0%,93%)"></span> stabil
+            <span class="hm-legend-swatch" style="background:hsl(130,45%,68%)"></span> leichter Rückgang
+            <span class="hm-legend-swatch" style="background:hsl(130,68%,40%)"></span> starker Rückgang
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemeinschaftsteuern breakdown -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>Gemeinschaftsteuern – Aufschlüsselung nach Steuerart</h2>
+        </div>
+        <div class="chart-box h300"><canvas id="chart-ein-gem"></canvas></div>
+      </div>
+
+      <!-- Category explanations -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1rem">Was bedeuten die Kategorien?</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.85rem">
+          <div class="ein-kat-desc" style="border-left-color:#1565c0">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#1565c0"></span><strong>Gemeinschaftsteuern</strong></div>
+            <p>Steuern, die Bund, Länder und Gemeinden gemeinsam erheben und nach einem gesetzlichen Schlüssel aufteilen. Dazu gehören <b>Lohnsteuer</b> (vom Arbeitslohn), <b>Umsatzsteuer</b> (beim Einkaufen), <b>Einkommensteuer</b> und <b>Körperschaftsteuer</b> (Unternehmensgewinne). Sie sind die mit Abstand größte Einnahmequelle des Bundes.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#0288d1">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#0288d1"></span><strong>Bundessteuern</strong></div>
+            <p>Steuern, die ausschließlich dem Bund zufließen. Größte Posten: <b>Energiesteuer</b> (auf Benzin, Diesel und Gas), <b>Tabaksteuer</b>, <b>Versicherungsteuer</b>, <b>Kfz-Steuer</b> und der <b>Solidaritätszuschlag</b> (für Steuerpflichtige mit höheren Einkommen). Seit 2021 auch die <b>CO₂-Bepreisung</b> auf fossile Brennstoffe.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#c1121f">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#c1121f"></span><strong>Kreditaufnahme</strong></div>
+            <p>Neue Schulden, die der Bund am Kapitalmarkt aufnimmt, um Ausgaben zu finanzieren, die nicht durch Steuereinnahmen gedeckt sind. Auch Sondervermögen wie das <b>Bundeswehr-Sondervermögen</b> nehmen eigenständig Kredite auf. Hohe Werte wie 2021 und 2022 spiegeln die Corona-Pandemie wider; 2026 liefert das Sondervermögen den Hauptteil.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#388e3c">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#388e3c"></span><strong>Verwaltungseinnahmen</strong></div>
+            <p>Einnahmen aus dem laufenden Staatsbetrieb: <b>Gebühren</b> (z. B. für Genehmigungen), <b>Gewinne aus Bundesbeteiligungen</b> (z. B. Bundesbank, KfW), <b>Erlöse aus CO₂-Zertifikaten</b> und Frequenzauktionen sowie Mieten und Verkaufserlöse. Diese Einnahmen entstehen nicht durch Steuern, sondern durch konkrete staatliche Leistungen oder Vermögenswerte.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#8e44ad">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#8e44ad"></span><strong>EU-Beitrag (netto)</strong></div>
+            <p>Der Betrag, den Deutschland per saldo aus dem EU-System <em>behält</em> – hauptsächlich <b>Zölle</b> auf Importe aus Nicht-EU-Ländern (z. B. auf Textilien oder Elektronik). Denn Deutschland zahlt gleichzeitig Beiträge an die EU (BNE- und Mehrwertsteuer-Eigenmittel, ca. 40 Mrd. €), die hier bereits gegengerechnet sind. Der Nettobetrag ist daher deutlich kleiner als die Brutto-Zölle.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#7b1fa2">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#7b1fa2"></span><strong>EU-Transfers</strong></div>
+            <p>Direkte <b>Zuschüsse der EU</b> an den Bundeshaushalt, vor allem aus dem europäischen <b>Aufbaufonds RRF</b> (Recovery and Resilience Facility), der nach der Corona-Krise aufgelegt wurde. Dieses Geld muss für Investitionen in Klimaschutz und Digitalisierung verwendet werden und ist zeitlich begrenzt.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#c9920a">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#c9920a"></span><strong>Sondervermögen-Transfers</strong></div>
+            <p>Überweisungen aus rechtlich eigenständigen <b>Sondervermögen</b> an den regulären Bundeshaushalt. Aktuell vor allem Zuweisungen aus dem <b>Sondervermögen Infrastruktur und Digitales</b> (100-Mrd.-Paket für Bahn, Straßen und Breitband), das ab 2025 Mittel an den Kernhaushalt zurückführt.</p>
+          </div>
+          <div class="ein-kat-desc" style="border-left-color:#757575">
+            <div class="ein-kat-head"><span class="ein-kat-dot" style="background:#757575"></span><strong>Sonstige Einnahmen</strong></div>
+            <p>Verschiedene weitere Einnahmen ohne klare Zuordnung zu den anderen Kategorien: <b>Darlehensrückflüsse</b> (z. B. aus Entwicklungshilfekrediten), <b>Rücklagenentnahmen</b>, <b>globale Mehreinnahmen</b> (Sammelposten für Haushaltsreste) und Erstattungen. Hier werden auch Abzüge (Erhebungskostenpauschale für die Steuererhebung) verbucht.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1rem">Einnahmen nach Kategorie – Übersicht</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead id="ein-thead"></thead>
+            <tbody id="ein-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Datenquelle: <a href="https://www.bundeshaushalt.de" target="_blank" rel="noopener">Bundeshaushalt.de</a> &nbsp;·&nbsp;
+  Bundesministerium der Finanzen &nbsp;·&nbsp;
+  Alle Beträge sind Sollwerte in Tausend Euro (Tsd. €)
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════ State
+let D = null;        // summary data
+let T = null;        // titles data
+let charts = {};
+let miniMode = 'a';
+let jdMode   = 'a';
+let jdYear   = null;
+let ovMode   = 'abs';
+let sf       = 'all';
+let srchTimer = null;
+let srchSortCol = null;   // index into t[] or null
+let srchSortDir = 1;      // 1=asc, -1=desc
+let titlesLoading = false;
+
+// ══════════════════════════════════════════════════════════════════════ Colors
+const EP_COLORS = {
+  '01':'#6d597a','02':'#2c3e50','03':'#8e44ad','04':'#c1121f',
+  '05':'#27ae60','06':'#2980b9','07':'#795548','08':'#1565c0',
+  '09':'#c9920a','10':'#388e3c','11':'#e53935','12':'#1e88e5',
+  '14':'#546e7a','15':'#00897b','16':'#2e7d32','17':'#f57c00',
+  '19':'#5d4037','20':'#37474f','21':'#607d8b','22':'#78909c',
+  '23':'#1976d2','24':'#7b1fa2','25':'#e64a19','30':'#0288d1',
+  '32':'#424242','60':'#757575'
+};
+const SPECIAL_EPS = new Set(['32','60']);
+
+function epColor(c){ return EP_COLORS[c] || '#aaa' }
+
+// ══════════════════════════════════════════════════════════════════════ Format
+function fmt(tsd){
+  if(tsd==null||isNaN(tsd)) return '—';
+  if(tsd>=1e6)  return (tsd/1e6).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' Mrd. €';
+  if(tsd>=1e3)  return (tsd/1e3).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' Mio. €';
+  return tsd.toLocaleString('de-DE')+' Tsd. €';
+}
+function fmtMrd(tsd){ return (tsd/1e6).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}) }
+function fmtPct(v){  return (v>=0?'+':'')+v.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' %' }
+function epName(code){ return (D.ministerien.find(m=>m.c===code)||{}).n || code }
+function yrSum(y){ return D.summary[String(y)] }
+
+// ══════════════════════════════════════════════════════════════════════ Init
+async function init(){
+  try{
+    const r = await fetch('data/summary.json');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    D = await r.json();
+    document.getElementById('loading-state').style.display='none';
+    document.getElementById('app').style.display='';
+    buildControls();
+    renderUebersicht();
+  } catch(e){
+    document.getElementById('loading-state').innerHTML=`
+      <p style="color:var(--red);font-weight:600">⚠ Fehler beim Laden der Daten</p>
+      <div class="err-box">${e.message}</div>
+      <p style="margin-top:1rem;font-size:.85rem">Bitte einen lokalen Webserver starten:<br>
+      <span class="code-hint">python3 -m http.server 8000</span><br>
+      Dann <a href="http://localhost:8000" style="color:var(--red)">localhost:8000</a> öffnen.</p>`;
+  }
+}
+
+function buildControls(){
+  // Übersicht year select
+  const sel = document.getElementById('ov-year-sel');
+  D.years.forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o); });
+  sel.value = D.years.at(-1);
+
+  // EP checkboxes (Ministerienvergleich)
+  const grid = document.getElementById('ep-checkboxes');
+  D.ministerien.forEach(m=>{
+    const lbl = document.createElement('label');
+    lbl.className = 'ep-label' + (SPECIAL_EPS.has(m.c)?' ep-special':'');
+    lbl.title = SPECIAL_EPS.has(m.c) ? 'Sonderposition (Schuldenverwaltung / Finanzierungshaushalt)' : '';
+    lbl.innerHTML=`<input type="checkbox" value="${m.c}" onchange="renderMini()">
+      <span class="ep-dot" style="background:${epColor(m.c)}"></span>
+      <span><b>${m.c}</b> ${m.n}</span>`;
+    grid.appendChild(lbl);
+  });
+  selectTop5();
+
+  // Jahresdetails year pills
+  const pills = document.getElementById('year-pills');
+  D.years.forEach((y,i)=>{
+    const b=document.createElement('button');
+    b.className='ypill'+(i===D.years.length-1?' act':'');
+    b.textContent=y; b.onclick=()=>selectJdYear(y);
+    pills.appendChild(b);
+  });
+  jdYear = D.years.at(-1);
+
+  // Suche year select
+  const ss=document.getElementById('search-year');
+  D.years.forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent=y; ss.appendChild(o); });
+}
+
+// ══════════════════════════════════════════════════════════════════ Tab switch
+function switchTab(tab){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if(tab==='ministerien') renderMini();
+  if(tab==='jahresdetails') renderJD();
+  if(tab==='suche') initSearch();
+  if(tab==='detail') initDetail();
+  if(tab==='panorama') renderPanorama();
+  if(tab==='einnahmen') initEinnahmen();
+}
+
+// ══════════════════════════════════════════════════════════════ Tab 1: Übersicht
+function setOvMode(m){ ovMode=m; document.getElementById('ov-abs').classList.toggle('act',m==='abs'); document.getElementById('ov-rel').classList.toggle('act',m==='rel'); renderMainChart(); }
+
+function renderUebersicht(){
+  const yrs = D.years, s = D.summary;
+  const ly=yrs.at(-1), py=yrs.at(-2);
+  const ld=s[ly], pd=s[py];
+  const diff = ld.a - ld.e;
+  const deltaA = ((ld.a-pd.a)/pd.a)*100;
+
+  document.getElementById('stats-cards').innerHTML=`
+    <div class="stat red">
+      <div class="stat-label">Ausgaben ${ly}</div>
+      <div class="stat-value c-red">${fmt(ld.a)}</div>
+      <div class="stat-sub">Sollwert Bundeshaushalt</div>
+    </div>
+    <div class="stat gold">
+      <div class="stat-label">Einnahmen ${ly}</div>
+      <div class="stat-value c-gold">${fmt(ld.e)}</div>
+      <div class="stat-sub">inkl. Kreditaufnahme</div>
+    </div>
+    <div class="stat ${Math.abs(diff)<1e4?'gray':'red'}">
+      <div class="stat-label">Differenz ${ly}</div>
+      <div class="stat-value c-${Math.abs(diff)<1e4?'gray':'red'}">${diff>0?'+':''}${fmt(diff)}</div>
+      <div class="stat-sub">Ausgaben minus Einnahmen</div>
+    </div>
+    <div class="stat ${deltaA>0?'red':'gray'}">
+      <div class="stat-label">Veränderung Ausgaben</div>
+      <div class="stat-value c-${deltaA>0?'red':'gray'}">${fmtPct(deltaA)}</div>
+      <div class="stat-sub">gegenüber ${py}</div>
+    </div>`;
+
+  renderMainChart();
+  renderOvEP();
+
+  // Table
+  const tbody = document.querySelector('#year-table tbody');
+  tbody.innerHTML = yrs.map((y,i)=>{
+    const d=s[y], prev=i>0?s[yrs[i-1]]:null;
+    const diff=d.a-d.e;
+    const da=prev?((d.a-prev.a)/prev.a*100):null;
+    return `<tr>
+      <td><b>${y}</b></td>
+      <td class="num">${fmt(d.a)}</td>
+      <td class="num">${fmt(d.e)}</td>
+      <td class="num" style="color:${Math.abs(diff)<1e3?'var(--muted)':'var(--red)'}">${diff>0?'+':''}${fmt(diff)}</td>
+      <td class="num" style="color:${da===null?'var(--muted)':da>0?'var(--red)':'green'}">${da!==null?fmtPct(da):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMainChart(){
+  const yrs=D.years, s=D.summary;
+  const base = s[yrs[0]].a;
+  const ausData = yrs.map(y=> ovMode==='abs' ? s[y].a/1e6 : (s[y].a/base-1)*100);
+  const label   = ovMode==='abs' ? 'Ausgaben (Mrd. €)' : 'Ausgaben (Veränderung vs. 2020 in %)';
+  const yTitle  = ovMode==='abs' ? 'Mrd. €' : '% vs. 2020';
+
+  if(charts.main) charts.main.destroy();
+  charts.main = new Chart(document.getElementById('chart-main'),{
+    type:'bar',
+    data:{
+      labels: yrs.map(String),
+      datasets:[{
+        label: label,
+        data: ausData,
+        backgroundColor: yrs.map((_,i)=> i===yrs.length-1 ? '#c1121f' : '#e8a0a5'),
+        borderRadius:5, borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label: ctx=>{
+            if(ovMode==='abs') return ` ${fmtMrd(ctx.parsed.y*1e6)} Mrd. €`;
+            return ` ${fmtPct(ctx.parsed.y)}`;
+          }
+        }}
+      },
+      scales:{
+        y:{title:{display:true,text:yTitle}, ticks:{callback:v=>v.toLocaleString('de-DE')}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderOvEP(){
+  const year = document.getElementById('ov-year-sel').value;
+  const yd   = D.summary[year];
+  if(!yd) return;
+  const sorted = D.ministerien.filter(m=>yd.ep[m.c]?.a>0).sort((a,b)=>(yd.ep[b.c]?.a||0)-(yd.ep[a.c]?.a||0));
+  const labels = sorted.map(m=>m.n.length>52?m.n.slice(0,50)+'…':m.n);
+  const vals   = sorted.map(m=>(yd.ep[m.c]?.a||0)/1e6);
+  const cols   = sorted.map(m=>SPECIAL_EPS.has(m.c)?epColor(m.c)+'99':epColor(m.c));
+
+  if(charts.epYear) charts.epYear.destroy();
+  charts.epYear = new Chart(document.getElementById('chart-ep-year'),{
+    type:'bar',
+    data:{labels, datasets:[{label:'Ausgaben',data:vals,backgroundColor:cols,borderRadius:4}]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.parsed.x*1e6)}`}}},
+      scales:{
+        x:{title:{display:true,text:'Mrd. €'},ticks:{callback:v=>v.toLocaleString('de-DE')}},
+        y:{ticks:{font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════ Tab 2: Ministerien
+function setMiniMode(m){ miniMode=m; document.getElementById('mode-a').classList.toggle('act',m==='a'); document.getElementById('mode-e').classList.toggle('act',m==='e'); renderMini(); }
+
+function selectTop5(){
+  const yd = D.summary[String(D.years.at(-1))];
+  const top5 = D.ministerien.filter(m=>!SPECIAL_EPS.has(m.c)&&yd.ep[m.c]?.a>0)
+    .sort((a,b)=>(yd.ep[b.c]?.a||0)-(yd.ep[a.c]?.a||0)).slice(0,5).map(m=>m.c);
+  document.querySelectorAll('#ep-checkboxes input[type=checkbox]').forEach(cb=>{cb.checked=top5.includes(cb.value)});
+  renderMini();
+}
+function selectAll(){ document.querySelectorAll('#ep-checkboxes input[type=checkbox]').forEach(cb=>cb.checked=true); renderMini(); }
+function selectNone(){ document.querySelectorAll('#ep-checkboxes input[type=checkbox]').forEach(cb=>cb.checked=false); renderMini(); }
+
+function renderMini(){
+  const selected = [...document.querySelectorAll('#ep-checkboxes input:checked')].map(cb=>cb.value);
+  document.getElementById('mini-title').textContent = (miniMode==='a'?'Ausgaben':'Einnahmen') + ' der ausgewählten Ministerien';
+
+  const datasets = D.ministerien.filter(m=>selected.includes(m.c)).map(m=>({
+    label:`${m.c} ${m.n}`,
+    data: D.years.map(y=>(D.summary[String(y)]?.ep?.[m.c]?.[miniMode]||0)/1e6),
+    borderColor:epColor(m.c), backgroundColor:epColor(m.c)+'20',
+    tension:.3, pointRadius:4, borderWidth:2, fill:false,
+    borderDash: SPECIAL_EPS.has(m.c)?[5,3]:[]
+  }));
+
+  if(charts.mini) charts.mini.destroy();
+  charts.mini = new Chart(document.getElementById('chart-mini'),{
+    type:'line',
+    data:{labels:D.years.map(String), datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:12,font:{size:10.5},padding:12}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label.split(' ').slice(1).join(' ')}: ${fmt(ctx.parsed.y*1e6)}`}}
+      },
+      scales:{
+        y:{title:{display:true,text:'Mrd. €'},ticks:{callback:v=>v.toLocaleString('de-DE')}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════ Tab 3: Jahresdetails
+function setJdMode(m){ jdMode=m; document.getElementById('jd-mode-a').classList.toggle('act',m==='a'); document.getElementById('jd-mode-e').classList.toggle('act',m==='e'); renderJD(); }
+
+function selectJdYear(y){
+  jdYear=y;
+  document.querySelectorAll('.ypill').forEach(b=>b.classList.toggle('act',parseInt(b.textContent)===y));
+  renderJD();
+}
+
+function renderJD(){
+  const yd = D.summary[String(jdYear)];
+  if(!yd) return;
+  document.getElementById('jd-chart-title').textContent=(jdMode==='a'?'Ausgaben':'Einnahmen')+` nach Einzelplan ${jdYear}`;
+  document.getElementById('jd-table-title').textContent=`Alle Einzelpläne ${jdYear}`;
+
+  const key = jdMode;
+  const sorted = D.ministerien.filter(m=>yd.ep[m.c]?.[key]>0)
+    .sort((a,b)=>(yd.ep[b.c]?.[key]||0)-(yd.ep[a.c]?.[key]||0));
+  const labels = sorted.map(m=>m.n.length>55?m.n.slice(0,53)+'…':m.n);
+  const vals   = sorted.map(m=>(yd.ep[m.c]?.[key]||0)/1e6);
+  const cols   = sorted.map(m=>SPECIAL_EPS.has(m.c)?epColor(m.c)+'99':epColor(m.c));
+
+  if(charts.jd) charts.jd.destroy();
+  charts.jd = new Chart(document.getElementById('chart-jd'),{
+    type:'bar',
+    data:{labels, datasets:[{label:key==='a'?'Ausgaben':'Einnahmen',data:vals,backgroundColor:cols,borderRadius:4}]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.parsed.x*1e6)}`}}},
+      scales:{
+        x:{title:{display:true,text:'Mrd. €'},ticks:{callback:v=>v.toLocaleString('de-DE')}},
+        y:{ticks:{font:{size:11}}}
+      }
+    }
+  });
+
+  const totalA = yd.a;
+  document.getElementById('jd-tbody').innerHTML = D.ministerien
+    .filter(m=>yd.ep[m.c])
+    .sort((a,b)=>(yd.ep[b.c]?.a||0)-(yd.ep[a.c]?.a||0))
+    .map(m=>{
+      const ep=yd.ep[m.c]||{a:0,e:0};
+      const pct=totalA?(ep.a/totalA*100).toFixed(1):'0.0';
+      const col=epColor(m.c);
+      return `<tr>
+        <td><span class="ep-tag" style="background:${col}1a;color:${col}">${m.c}</span></td>
+        <td>${m.n}</td>
+        <td class="num">${ep.a>0?fmt(ep.a):'—'}</td>
+        <td class="num">${ep.e>0?fmt(ep.e):'—'}</td>
+        <td class="num">${pct} %</td>
+      </tr>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════ Tab 4: Suche
+async function initSearch(){
+  if(T){ document.getElementById('suche-ui').style.display=''; buildSearchThead(); return; }
+  if(titlesLoading) return;
+  titlesLoading=true;
+  document.getElementById('suche-loading').style.display='';
+  try{
+    const r=await fetch('data/titles.json');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    T=await r.json();
+    document.getElementById('suche-loading').style.display='none';
+    document.getElementById('suche-ui').style.display='';
+    buildSearchThead();
+  } catch(e){
+    document.getElementById('suche-loading').innerHTML=`<p style="color:var(--red)">⚠ Fehler: ${e.message}</p>`;
+  }
+  titlesLoading=false;
+}
+
+function setSF(v){ sf=v; ['all','a','e'].forEach(x=>document.getElementById('sf-'+x).classList.toggle('act',x===v)); onSearch(); }
+function onSearch(){ clearTimeout(srchTimer); srchTimer=setTimeout(runSearch,280); }
+
+// titles: [year(0), ep(1), kap(2), titel(3), txt(4), ea(5), art(6), soll(7)]
+const SRCH_COLS = [
+  { label:'Jahr',        idx:0,  align:'left'  },
+  { label:'Art',         idx:5,  align:'left'  },
+  { label:'Ministerium', idx:1,  align:'left'  },
+  { label:'Kap.',        idx:2,  align:'left'  },
+  { label:'Titel',       idx:3,  align:'left'  },
+  { label:'Bezeichnung', idx:4,  align:'left'  },
+  { label:'Betrag',      idx:7,  align:'right' },
+];
+
+function buildSearchThead(){
+  document.getElementById('search-thead').innerHTML = `<tr>${SRCH_COLS.map((c,ci)=>{
+    const isActive = srchSortCol === c.idx;
+    const cls = 'sortable' + (isActive ? (srchSortDir===1?' sort-asc':' sort-desc') : '');
+    const style = c.align==='right' ? ' style="text-align:right"' : '';
+    return `<th class="${cls}"${style} onclick="setSrchSort(${c.idx})">${c.label}</th>`;
+  }).join('')}</tr>`;
+}
+
+function setSrchSort(colIdx){
+  if(srchSortCol === colIdx) srchSortDir *= -1;
+  else { srchSortCol = colIdx; srchSortDir = colIdx===7 ? -1 : 1; }
+  runSearch();
+}
+
+function runSearch(){
+  if(!T) return;
+  const q   = document.getElementById('search-q').value.trim().toLowerCase();
+  const yr  = document.getElementById('search-year').value;
+  const info= document.getElementById('search-info');
+  const tbody=document.getElementById('search-tbody');
+  const more =document.getElementById('search-more');
+
+  buildSearchThead();
+
+  if(q.length<3){ info.textContent='Bitte mindestens 3 Zeichen eingeben.'; tbody.innerHTML=''; more.style.display='none'; return; }
+
+  // titles: [year, ep, kap, titel, txt, ea, art, soll]
+  let res=T.filter(t=>{
+    if(yr && t[0]!==parseInt(yr)) return false;
+    if(sf==='a' && t[5]!=='A') return false;
+    if(sf==='e' && t[5]!=='E') return false;
+    return t[4].toLowerCase().includes(q)||t[6].toLowerCase().includes(q);
+  });
+
+  if(srchSortCol !== null){
+    const col = srchSortCol, dir = srchSortDir;
+    res = res.slice().sort((a,b)=>{
+      const av = a[col], bv = b[col];
+      if(typeof av === 'number') return (av - bv) * dir;
+      return String(av).localeCompare(String(bv), 'de') * dir;
+    });
+  }
+
+  const MAX=250;
+  info.textContent=`${res.length.toLocaleString('de-DE')} Treffer${res.length>MAX?` · erste ${MAX} angezeigt`:''}`;
+
+  const epMap=Object.fromEntries(D.ministerien.map(m=>[m.c,m.n]));
+  tbody.innerHTML=res.slice(0,MAX).map(t=>{
+    const col=epColor(t[1]);
+    return `<tr>
+      <td>${t[0]}</td>
+      <td><span class="tag tag-${t[5].toLowerCase()}">${t[5]==='A'?'Ausgabe':'Einnahme'}</span></td>
+      <td style="white-space:nowrap">
+        <span class="ep-tag" style="background:${col}1a;color:${col}">${t[1]}</span>
+        <span style="font-size:.75rem;color:var(--muted)"> ${(epMap[t[1]]||'').replace('Bundesministerium für','BMf').replace('Bundesministerium der','BMd').replace('Bundesministerium des','BMds')}</span>
+      </td>
+      <td class="mono">${t[2]}</td>
+      <td class="mono">${t[3]}</td>
+      <td>${t[4]}</td>
+      <td class="num">${fmt(t[7])}</td>
+    </tr>`;
+  }).join('');
+
+  if(res.length>MAX){ more.textContent=`Nur erste ${MAX} von ${res.length.toLocaleString('de-DE')} Treffern. Suchbegriff verfeinern.`; more.style.display=''; }
+  else more.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════════════════════ Tab 5: Panorama
+let pnMode = 'abs';   // 'abs' | 'pct'
+let pnSp   = false;   // include special EPs (32, 60)
+
+function setPnMode(m){ pnMode=m; document.getElementById('pn-abs').classList.toggle('act',m==='abs'); document.getElementById('pn-pct').classList.toggle('act',m==='pct'); renderPanorama(); }
+function setPnSp(v)  { pnSp=v;  document.getElementById('pn-sp-off').classList.toggle('act',!v); document.getElementById('pn-sp-on').classList.toggle('act',v); renderPanorama(); }
+
+function pnEPs() {
+  return D.ministerien.filter(m => pnSp || !SPECIAL_EPS.has(m.c));
+}
+
+function heatColor(pct) {
+  if (Math.abs(pct) < 3) return 'hsl(0,0%,93%)';
+  const t = Math.min(Math.abs(pct), 55) / 55;
+  return pct > 0
+    ? `hsl(0,${Math.round(t*85)}%,${Math.round(96-t*52)}%)`
+    : `hsl(130,${Math.round(t*68)}%,${Math.round(96-t*56)}%)`;
+}
+
+function heatTextColor(pct) {
+  return Math.abs(pct) > 28 ? '#fff' : '#222';
+}
+
+function renderPanorama() {
+  renderStreamgraph();
+  renderHeatmap();
+}
+
+function renderStreamgraph() {
+  const years = D.years;
+  const eps = pnEPs();
+
+  // Sort ascending by 2026 value so largest stream is at bottom
+  const lastYr = String(years.at(-1));
+  eps.sort((a,b) => (D.summary[lastYr]?.ep?.[a.c]?.a||0) - (D.summary[lastYr]?.ep?.[b.c]?.a||0));
+
+  const yearTotals = {};
+  years.forEach(y => {
+    yearTotals[y] = eps.reduce((s,m) => s + (D.summary[String(y)]?.ep?.[m.c]?.a||0), 0);
+  });
+
+  const modeLabel = pnMode === 'pct' ? 'Anteil %' : 'Mrd. €';
+  document.getElementById('pn-stream-title').textContent =
+    pnMode === 'pct' ? 'Anteil am Haushalt im Zeitverlauf' : 'Haushaltsstruktur im Zeitverlauf';
+
+  const datasets = eps.map(m => ({
+    label: m.n,
+    epCode: m.c,
+    data: years.map(y => {
+      const raw = D.summary[String(y)]?.ep?.[m.c]?.a || 0;
+      return pnMode === 'pct'
+        ? (yearTotals[y] > 0 ? raw / yearTotals[y] * 100 : 0)
+        : raw / 1e6;
+    }),
+    backgroundColor: epColor(m.c) + 'c0',
+    borderColor:     epColor(m.c),
+    borderWidth: 0.5,
+    fill: true,
+    pointRadius: 0,
+    tension: 0.35
+  }));
+
+  if (charts.stream) charts.stream.destroy();
+  charts.stream = new Chart(document.getElementById('chart-stream'), {
+    type: 'line',
+    data: { labels: years.map(String), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => `${items[0].label} · ${items[0].dataset.label}`,
+            label: ctx => {
+              const y   = years[ctx.dataIndex];
+              const raw = D.summary[String(y)]?.ep?.[eps[ctx.datasetIndex]?.c]?.a || 0;
+              const pct = yearTotals[y] > 0 ? (raw / yearTotals[y] * 100).toFixed(1) : '0.0';
+              return [` ${fmt(raw)}`, ` ${pct} % des abgebildeten Haushalts`];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          stacked: true,
+          title: { display: true, text: modeLabel },
+          max: pnMode === 'pct' ? 100 : undefined,
+          ticks: { callback: v => pnMode === 'pct' ? v + ' %' : v.toLocaleString('de-DE') }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Build inline legend (sorted large → small for readability)
+  const legendEps = [...eps].reverse();
+  document.getElementById('stream-legend').innerHTML = legendEps.map(m =>
+    `<div class="stream-leg-item" title="${m.n}">
+       <span class="stream-leg-dot" style="background:${epColor(m.c)}"></span>
+       <span>${m.c} ${m.n.split('für ').at(-1).split('und').at(0).trim().slice(0,28)}</span>
+     </div>`
+  ).join('');
+}
+
+function renderHeatmap() {
+  const years = D.years;
+  const eps   = pnEPs();
+  const lastYr = String(years.at(-1));
+
+  // Sort by last year Ausgaben, largest first
+  eps.sort((a,b) => (D.summary[lastYr]?.ep?.[b.c]?.a||0) - (D.summary[lastYr]?.ep?.[a.c]?.a||0));
+
+  document.getElementById('pn-hm-title').textContent = 'Veränderungen im Jahresvergleich (Ausgaben)';
+
+  // Header
+  const yearPairs = years.slice(1).map((y,i) => ({ label: `→${String(y).slice(2)}`, from: years[i], to: y }));
+  document.getElementById('hm-thead').innerHTML = `<tr>
+    <th class="hm-th-name">Ministerium</th>
+    <th style="text-align:right;min-width:90px;border-right:3px solid var(--border)">${lastYr} Ausgaben</th>
+    ${yearPairs.map(p=>`<th>${p.label}</th>`).join('')}
+  </tr>`;
+
+  // Rows
+  document.getElementById('hm-tbody').innerHTML = eps.map(m => {
+    const col = epColor(m.c);
+    const val26 = D.summary[lastYr]?.ep?.[m.c]?.a || 0;
+
+    const cells = yearPairs.map(p => {
+      const prev = D.summary[String(p.from)]?.ep?.[m.c]?.a || 0;
+      const cur  = D.summary[String(p.to)]?.ep?.[m.c]?.a   || 0;
+      if (!prev && !cur) return `<td class="hm-cell" style="background:#eee;color:#bbb">—</td>`;
+      if (!prev) return `<td class="hm-cell" style="background:#eee;color:#999">neu</td>`;
+      const pct = (cur - prev) / prev * 100;
+      const bg  = heatColor(pct);
+      const fg  = heatTextColor(pct);
+      const tip = `${m.n}: ${fmt(prev)} → ${fmt(cur)}`;
+      return `<td class="hm-cell" style="background:${bg};color:${fg}" title="${tip}">${pct>0?'+':''}${pct.toFixed(0)}&thinsp;%</td>`;
+    }).join('');
+
+    const shortName = m.n.replace('Bundesministerium für','BMf').replace('Bundesministerium der','BMd').replace('Bundesministerium des','BMd');
+    return `<tr>
+      <td class="hm-name">
+        <span class="ep-dot" style="background:${col};flex-shrink:0"></span>
+        <span title="${m.n}"><b>${m.c}</b> ${shortName.length>32 ? shortName.slice(0,30)+'…' : shortName}</span>
+      </td>
+      <td class="hm-cell hm-base" style="text-align:right;border-right:3px solid var(--border);color:${col};background:${col}12">${val26>0?fmt(val26):'—'}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════ Tab 6: Detail
+let DETAIL = null;
+let detailLoading = false;
+let dtEP   = null;
+let dtMode = 'a';
+let dtView = 'art';
+let dtPct  = false;
+let dtSelectedKaps = new Set();
+
+// Fixed color palette for Ausgabenarten
+const ART_COLORS = [
+  '#c1121f','#1e88e5','#27ae60','#f39c12','#8e44ad',
+  '#e67e22','#16a085','#c0392b','#2980b9','#27ae60',
+  '#d35400','#7f8c8d','#bdc3c7'
+];
+let artColorMap = {};
+
+function getArtColor(art) {
+  if (art in artColorMap) return artColorMap[art];
+  const idx = Object.keys(artColorMap).length % ART_COLORS.length;
+  artColorMap[art] = ART_COLORS[idx];
+  return artColorMap[art];
+}
+
+// Preset colors for known Ausgabenarten
+const ART_PRESET = {
+  'Personalausgaben':                               '#c1121f',
+  'Sächliche Verwaltungsausgaben':                  '#1e88e5',
+  'Zinsen':                                         '#e67e22',
+  'Zuweisungen und Zuschüsse (ohne Investitionen)': '#27ae60',
+  'Ausgaben für Investitionen':                     '#8e44ad',
+  'Besondere Finanzierungsausgaben':                '#7f8c8d',
+  '':                                               '#aaaaaa',
+};
+
+function artColor(art) {
+  if (art in ART_PRESET) return ART_PRESET[art];
+  return getArtColor(art);
+}
+
+function artLabel(art) {
+  return art || 'Nicht klassifiziert / Sozialleistungen';
+}
+
+async function initDetail() {
+  if (DETAIL) { renderDetail(); return; }
+  if (detailLoading) return;
+  detailLoading = true;
+  document.getElementById('detail-loading').style.display = '';
+  try {
+    const r = await fetch('data/detail.json');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    DETAIL = await r.json();
+
+    // Populate EP selector
+    const sel = document.getElementById('dt-ep-sel');
+    D.ministerien.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.c; o.textContent = `${m.c} – ${m.n}`;
+      sel.appendChild(o);
+    });
+    dtEP = D.ministerien[0]?.c;
+    sel.value = dtEP;
+
+    document.getElementById('detail-loading').style.display = 'none';
+    document.getElementById('detail-ui').style.display = '';
+    renderDetail();
+  } catch(e) {
+    document.getElementById('detail-loading').innerHTML = `<p style="color:var(--red)">⚠ ${e.message}</p>`;
+  }
+  detailLoading = false;
+}
+
+function onDtEP() {
+  dtEP = document.getElementById('dt-ep-sel').value;
+  dtSelectedKaps = new Set();
+  artColorMap = {};
+  renderDetail();
+}
+
+function setDtView(v) {
+  dtView = v;
+  document.getElementById('dt-view-art').classList.toggle('act', v === 'art');
+  document.getElementById('dt-view-kap').classList.toggle('act', v === 'kap');
+  document.getElementById('dt-art-section').style.display = v === 'art' ? '' : 'none';
+  document.getElementById('dt-kap-section').style.display = v === 'kap' ? '' : 'none';
+  renderDetail();
+}
+
+function setDtMode(m) {
+  dtMode = m;
+  document.getElementById('dt-mode-a').classList.toggle('act', m === 'a');
+  document.getElementById('dt-mode-e').classList.toggle('act', m === 'e');
+  renderDetail();
+}
+
+function setDtPct(v) {
+  dtPct = v;
+  document.getElementById('dt-pct-abs').classList.toggle('act', !v);
+  document.getElementById('dt-pct-rel').classList.toggle('act',  v);
+  renderDetail();
+}
+
+function dtYearTotals(epData, byKey) {
+  const totals = {};
+  D.years.forEach(y => {
+    totals[y] = Object.values(epData?.[String(y)]?.[byKey] || {})
+      .reduce((s, v) => s + (v[dtMode] || 0), 0);
+  });
+  return totals;
+}
+
+function renderDetail() {
+  if (!DETAIL || !dtEP) return;
+  const epData = DETAIL[dtEP];
+  const epName = D.ministerien.find(m => m.c === dtEP)?.n || dtEP;
+  const modeLabel = dtMode === 'a' ? 'Ausgaben' : 'Einnahmen';
+
+  document.getElementById('dt-art-title').textContent = `${modeLabel}struktur: ${epName}`;
+  document.getElementById('dt-kap-title').textContent = `${modeLabel} nach Kapitel: ${epName}`;
+  document.getElementById('dt-table-title').textContent = `Kapitel im Zeitverlauf: ${epName}`;
+
+  if (dtView === 'art') renderDtArt(epData);
+  else renderDtKap(epData, epName);
+  renderDtTable(epData);
+}
+
+function renderDtArt(epData) {
+  const yearTotals = dtYearTotals(epData, 'byArt');
+
+  // Collect arts with non-zero sum across years
+  const artSums = {};
+  D.years.forEach(y => {
+    Object.entries(epData?.[String(y)]?.byArt || {}).forEach(([art, v]) => {
+      artSums[art] = (artSums[art] || 0) + (v[dtMode] || 0);
+    });
+  });
+  const arts = Object.entries(artSums).filter(([,v]) => v > 0).sort((a,b)=>b[1]-a[1]).map(([a])=>a);
+
+  const datasets = arts.map(art => ({
+    label: artLabel(art),
+    data: D.years.map(y => {
+      const raw = epData?.[String(y)]?.byArt?.[art]?.[dtMode] || 0;
+      return dtPct ? (yearTotals[y] > 0 ? raw / yearTotals[y] * 100 : 0) : raw / 1e6;
+    }),
+    backgroundColor: artColor(art),
+    stack: 'stack',
+    borderWidth: 0
+  }));
+
+  const yLabel = dtPct ? 'Anteil %' : 'Mrd. €';
+  if (charts.dtArt) charts.dtArt.destroy();
+  charts.dtArt = new Chart(document.getElementById('chart-dt-art'), {
+    type: 'bar',
+    data: { labels: D.years.map(String), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10.5 }, padding: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const y = D.years[ctx.dataIndex];
+              const raw = epData?.[String(y)]?.byArt?.[arts[ctx.datasetIndex]]?.[dtMode] || 0;
+              const pct = yearTotals[y] > 0 ? (raw / yearTotals[y] * 100).toFixed(1) : '0.0';
+              return ` ${ctx.dataset.label}: ${fmt(raw)} (${pct} % des Ministeriums)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: {
+          stacked: true,
+          title: { display: true, text: yLabel },
+          ticks: { callback: v => dtPct ? v.toLocaleString('de-DE')+' %' : v.toLocaleString('de-DE') },
+          max: dtPct ? 100 : undefined
+        }
+      }
+    }
+  });
+}
+
+function buildKapColorMap(epData) {
+  const latestYr = String(D.years.at(-1));
+  const yd = epData?.[latestYr];
+  if (!yd) return {};
+  const sorted = Object.keys(yd.byKap).sort((a, b) => (yd.byKap[b][dtMode] || 0) - (yd.byKap[a][dtMode] || 0));
+  const palette = ['#c1121f','#1e88e5','#27ae60','#f39c12','#8e44ad','#e67e22',
+                   '#16a085','#d35400','#546e7a','#2c3e50','#8e44ad','#27ae60',
+                   '#c0392b','#7f8c8d','#bdc3c7'];
+  const map = {};
+  sorted.forEach((kap, i) => { map[kap] = palette[i % palette.length]; });
+  return map;
+}
+
+function renderDtKap(epData, epName) {
+  const latestYr = String(D.years.at(-1));
+  const yd = epData?.[latestYr];
+  if (!yd) return;
+
+  const sorted = Object.entries(yd.byKap)
+    .sort((a, b) => (b[1][dtMode] || 0) - (a[1][dtMode] || 0));
+
+  // If no selection yet, default to top 6
+  if (dtSelectedKaps.size === 0) {
+    sorted.slice(0, 6).forEach(([kap]) => dtSelectedKaps.add(kap));
+  }
+
+  const colorMap = buildKapColorMap(epData);
+
+  // Rebuild checkboxes
+  const checksEl = document.getElementById('dt-kap-checks');
+  checksEl.innerHTML = '';
+  sorted.forEach(([kap, v]) => {
+    const name = v.n || kap;
+    const lbl = document.createElement('label');
+    lbl.className = 'ep-label';
+    lbl.innerHTML = `<input type="checkbox" value="${kap}" ${dtSelectedKaps.has(kap) ? 'checked' : ''} onchange="onDtKapChange()">
+      <span class="ep-dot" style="background:${colorMap[kap]}"></span>
+      <span><b>${kap}</b> ${name.length > 55 ? name.slice(0, 53) + '…' : name}</span>`;
+    checksEl.appendChild(lbl);
+  });
+
+  renderDtKapChart(epData, colorMap);
+}
+
+function onDtKapChange() {
+  dtSelectedKaps = new Set([...document.querySelectorAll('#dt-kap-checks input:checked')].map(cb => cb.value));
+  const epData = DETAIL[dtEP];
+  renderDtKapChart(epData, buildKapColorMap(epData));
+}
+
+function dtSelectTop(n) {
+  const epData = DETAIL[dtEP];
+  const latestYr = String(D.years.at(-1));
+  const yd = epData?.[latestYr];
+  if (!yd) return;
+  const top = Object.entries(yd.byKap).sort((a,b)=>(b[1][dtMode]||0)-(a[1][dtMode]||0)).slice(0,n).map(([k])=>k);
+  dtSelectedKaps = new Set(top);
+  document.querySelectorAll('#dt-kap-checks input').forEach(cb => { cb.checked = dtSelectedKaps.has(cb.value); });
+  renderDtKapChart(epData, buildKapColorMap(epData));
+}
+function dtSelectAllKap()  { document.querySelectorAll('#dt-kap-checks input').forEach(cb => { cb.checked = true; dtSelectedKaps.add(cb.value); }); renderDtKapChart(DETAIL[dtEP], buildKapColorMap(DETAIL[dtEP])); }
+function dtSelectNoneKap() { document.querySelectorAll('#dt-kap-checks input').forEach(cb => { cb.checked = false; }); dtSelectedKaps = new Set(); renderDtKapChart(DETAIL[dtEP], buildKapColorMap(DETAIL[dtEP])); }
+
+function renderDtKapChart(epData, colorMap) {
+  const yearTotals = dtYearTotals(epData, 'byKap');
+  const kapList = [...dtSelectedKaps];
+
+  const datasets = kapList.map(kap => {
+    const name = epData?.[String(D.years.at(-1))]?.byKap?.[kap]?.n || kap;
+    return {
+      label: `${kap} ${name.length > 45 ? name.slice(0, 43) + '…' : name}`,
+      data: D.years.map(y => {
+        const raw = epData?.[String(y)]?.byKap?.[kap]?.[dtMode] || 0;
+        return dtPct ? (yearTotals[y] > 0 ? raw / yearTotals[y] * 100 : 0) : raw / 1e6;
+      }),
+      borderColor: colorMap[kap] || '#aaa',
+      backgroundColor: (colorMap[kap] || '#aaa') + '20',
+      tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false
+    };
+  });
+
+  const yLabel = dtPct ? 'Anteil %' : 'Mrd. €';
+  if (charts.dtKap) charts.dtKap.destroy();
+  charts.dtKap = new Chart(document.getElementById('chart-dt-kap'), {
+    type: 'line',
+    data: { labels: D.years.map(String), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10.5 }, padding: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const y = D.years[ctx.dataIndex];
+              const kap = kapList[ctx.datasetIndex];
+              const raw = epData?.[String(y)]?.byKap?.[kap]?.[dtMode] || 0;
+              const pct = yearTotals[y] > 0 ? (raw / yearTotals[y] * 100).toFixed(1) : '0.0';
+              return ` ${ctx.dataset.label}: ${fmt(raw)} (${pct} % des Ministeriums)`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          title: { display: true, text: yLabel },
+          ticks: { callback: v => dtPct ? v.toLocaleString('de-DE')+' %' : v.toLocaleString('de-DE') }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderDtTable(epData) {
+  const yrs = D.years;
+  const yearTotals = dtYearTotals(epData, 'byKap');
+
+  // Collect all Kapitel
+  const kapMap = {};
+  yrs.forEach(y => {
+    Object.entries(epData?.[String(y)]?.byKap || {}).forEach(([kap, v]) => {
+      if (!kapMap[kap]) kapMap[kap] = { n: v.n || kap, byYear: {} };
+      kapMap[kap].byYear[y] = v[dtMode] || 0;
+    });
+  });
+
+  const sorted = Object.entries(kapMap).sort((a, b) => (b[1].byYear[yrs.at(-1)] || 0) - (a[1].byYear[yrs.at(-1)] || 0));
+
+  const fmtPp = v => (v >= 0 ? '+' : '') + v.toFixed(1) + ' pp';
+
+  document.getElementById('dt-thead').innerHTML = `<tr>
+    <th>Kapitel</th><th>Bezeichnung</th>
+    ${yrs.map(y => `<th style="text-align:right">${y}</th>`).join('')}
+    <th style="text-align:right">Δ ${yrs[0]}→${yrs.at(-1)}</th>
+  </tr>`;
+
+  document.getElementById('dt-tbody').innerHTML = sorted.map(([kap, info]) => {
+    const first = info.byYear[yrs[0]] || 0;
+    const last  = info.byYear[yrs.at(-1)] || 0;
+
+    // Absolute change metric
+    const deltaAbs = first > 0 ? ((last - first) / first * 100) : null;
+    // Percentage-point change (share first year → share last year)
+    const pctFirst = yearTotals[yrs[0]]  > 0 ? first / yearTotals[yrs[0]]  * 100 : null;
+    const pctLast  = yearTotals[yrs.at(-1)] > 0 ? last  / yearTotals[yrs.at(-1)] * 100 : null;
+    const deltaPp  = pctFirst !== null && pctLast !== null ? pctLast - pctFirst : null;
+
+    const delta      = dtPct ? deltaPp  : deltaAbs;
+    const deltaFmt   = dtPct
+      ? (delta !== null ? fmtPp(delta) : '—')
+      : (deltaAbs !== null ? fmtPct(deltaAbs) : '—');
+    const deltaColor = delta === null ? 'var(--muted)' : delta > 2 ? 'var(--red)' : delta < -2 ? 'green' : 'var(--muted)';
+
+    return `<tr>
+      <td class="mono">${kap}</td>
+      <td style="max-width:280px">${info.n}</td>
+      ${yrs.map(y => {
+        const raw = info.byYear[y] || 0;
+        const pct = yearTotals[y] > 0 ? (raw / yearTotals[y] * 100) : 0;
+        if (raw === 0) return `<td class="num" style="color:var(--muted)">—</td>`;
+        return dtPct
+          ? `<td class="num">${pct.toFixed(1)} %<br><span style="font-size:.7rem;color:var(--muted)">${fmt(raw)}</span></td>`
+          : `<td class="num">${fmt(raw)}<br><span style="font-size:.7rem;color:var(--muted)">${pct.toFixed(1)} %</span></td>`;
+      }).join('')}
+      <td class="num" style="color:${deltaColor}">${deltaFmt}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════ Tab 7: Einnahmen
+let EIN = null;
+let einMode = 'abs';
+
+const KAT_TIPS = {
+  'Gemeinschaftsteuern':     'Bund, Länder und Gemeinden teilen sich diese Steuern nach einem gesetzlichen Schlüssel. Größte Posten: Lohnsteuer, Umsatzsteuer, Einkommensteuer und Körperschaftsteuer. Der hier gezeigte Betrag ist der Bundesanteil nach Abzug der Länderanteile.',
+  'Bundessteuern':           'Steuern, die ausschließlich dem Bund zufließen: Energiesteuer (Benzin, Diesel), Tabaksteuer, Versicherungsteuer, Kfz-Steuer und CO₂-Bepreisung. Länder und Gemeinden erhalten davon nichts.',
+  'Kreditaufnahme':          'Neue Staatsschulden am Kapitalmarkt – wenn die Ausgaben die Einnahmen übersteigen. Auch Sondervermögen (z. B. Bundeswehr) nehmen eigenständig Kredite auf. Hohe Werte 2021/22 spiegeln die Corona-Pandemie wider.',
+  'Verwaltungseinnahmen':    'Einnahmen aus dem laufenden Staatsbetrieb: Gebühren, Gewinne aus Bundesbeteiligungen (Bundesbank, KfW), Erlöse aus CO₂-Zertifikaten und Frequenzauktionen sowie Mieten und Verkaufserlöse.',
+  'EU-Beitrag':              'Nettobetrag nach Aufrechnung: Deutschland überweist Beiträge an die EU (BNE- und Mehrwertsteuer-Eigenmittel) und behält dafür Zölle auf Importe aus Nicht-EU-Ländern. Gezeigt ist der Saldo – Deutschland behält hauptsächlich Zollanteile.',
+  'EU-Transfers':            'Direkte Zuschüsse der EU an den Bundeshaushalt, vor allem aus dem Aufbaufonds RRF (Recovery and Resilience Facility), der nach der Corona-Krise für Investitionen in Klimaschutz und Digitalisierung aufgelegt wurde.',
+  'Sondervermögen-Transfers':'Überweisungen aus rechtlich eigenständigen Sondervermögen an den regulären Haushalt, z. B. aus dem 100-Mrd.-Infrastrukturfonds für Bahn, Straßen und Breitband.',
+  'Sonstige Einnahmen':      'Sammelkategorie: Darlehensrückflüsse, Rücklagenentnahmen, globale Mehreinnahmen, Erhebungskostenpauschalen und weitere nicht anderweitig zugeordnete Einnahmen und Abzüge.',
+};
+
+const TOP_TIPS = {
+  'Lohnsteuer':           'Steuer auf Löhne und Gehälter – wird vom Arbeitgeber direkt ans Finanzamt abgeführt. Zusammen mit der Umsatzsteuer die wichtigste Einnahmequelle des Bundes.',
+  'Umsatzsteuer':         'Mehrwertsteuer auf Waren und Dienstleistungen: 19 % Regelsteuersatz, 7 % ermäßigt (z. B. Lebensmittel). Wird anteilig zwischen Bund, Ländern und Gemeinden aufgeteilt.',
+  'Einfuhrumsatzsteuer':  'Umsatzsteuer auf Waren, die aus Nicht-EU-Ländern eingeführt werden – wird beim Zoll erhoben und fließt vollständig in den Bundeshaushalt.',
+  'Einkommensteuer':      'Steuer auf selbständige Einkünfte und Gewinne, die jährlich per Steuererklärung veranlagt wird (im Unterschied zur Lohnsteuer, die laufend abgeführt wird).',
+  'Körperschaftsteuer':   'Steuer auf Gewinne von GmbHs, AGs und anderen Kapitalgesellschaften. Beträgt 15 % auf den zu versteuernden Gewinn.',
+  'Kapitalertragsteuer':  'Steuer auf Kapitalerträge wie Dividenden, Zinsen und Veräußerungsgewinne aus Aktien. Umfasst Abgeltungsteuer (25 %) sowie nicht veranlagte Steuern vom Ertrag.',
+  'Energiesteuer':        'Steuer auf Benzin, Diesel, Heizöl, Erdgas und andere Energieträger. Fließt vollständig an den Bund und ist eine der größten Bundessteuern.',
+  'Tabaksteuer':          'Steuer auf Zigaretten, Zigarren, Pfeifentabak und andere Tabakwaren. Der Steuersatz hängt von Stückzahl und Kleinverkaufspreis ab.',
+  'Versicherungsteuer':   'Steuer auf Versicherungsprämien (19 %) – ausgenommen sind Lebens- und Krankenversicherungen sowie einige weitere.',
+  'Kfz-Steuer':           'Jährliche Steuer auf Kraftfahrzeuge, abhängig von Motorart, Hubraum und CO₂-Ausstoß. Seit 2014 vollständig Bundessteuer.',
+  'Solidaritätszuschlag': 'Aufschlag auf die Einkommen- und Körperschaftsteuer. Seit 2021 entfällt er für ~90 % aller Steuerpflichtigen; verblieben sind Personen mit höheren Einkommen.',
+  'CO₂-Bepreisung':       'Abgabe auf fossile Brennstoffe (Heizöl, Erdgas, Benzin, Diesel) nach dem Brennstoffemissionshandelsgesetz (BEHG). Der Preis steigt schrittweise, um den Klimaschutz zu fördern.',
+  'Kreditaufnahme Markt': 'Anleihen und Schuldverschreibungen, die der Bund am Kapitalmarkt ausgibt, um Ausgaben zu finanzieren. Erfasst hier den Anteil des Kernhaushalts (Einzelplan 60).',
+  'EU-Beitrag (BNE)':     'Deutschlands Beitrag zum EU-Haushalt auf Basis des Bruttonationaleinkommens (BNE) – der größte Posten der deutschen EU-Eigenmittel, der direkt an Brüssel überwiesen wird.',
+  'Gewerbesteuerumlage':  'Anteil des Bundes an der Gewerbesteuer, die Gemeinden von Unternehmen erheben. Der Bund erhält einen kleinen Anteil als Umlage.',
+};
+
+function tipIcon(text){
+  if(!text) return '';
+  const esc = text.replace(/"/g, '&quot;');
+  return `<i class="tip-icon" data-tip="${esc}" aria-label="${esc}" role="note">i</i>`;
+}
+
+const KAT_COLORS = {
+  'Gemeinschaftsteuern':    '#1565c0',
+  'Bundessteuern':          '#0288d1',
+  'Kreditaufnahme':         '#c1121f',
+  'Verwaltungseinnahmen':   '#388e3c',
+  'EU-Beitrag':             '#8e44ad',
+  'EU-Transfers':           '#7b1fa2',
+  'Sondervermögen-Transfers':'#c9920a',
+  'Sonstige Einnahmen':     '#757575',
+};
+const TOP_COLORS = [
+  '#c1121f','#1565c0','#0288d1','#c9920a','#388e3c',
+  '#8e44ad','#e64a19','#546e7a','#00897b','#5d4037',
+  '#e53935','#1e88e5','#2e7d32','#f57c00','#7b1fa2'
+];
+
+async function initEinnahmen(){
+  if(EIN){ renderEinnahmen(); return; }
+  const ui = document.getElementById('ein-ui');
+  const ld = document.getElementById('ein-loading');
+  ld.style.display = '';
+  ui.style.display = 'none';
+  try{
+    const r = await fetch('data/einnahmen.json');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    EIN = await r.json();
+    ld.style.display = 'none';
+    ui.style.display = '';
+    renderEinnahmen();
+  } catch(e){
+    ld.innerHTML = `<p style="color:var(--red)">Fehler: ${e.message}</p>`;
+  }
+}
+
+function setEinMode(m){
+  einMode = m;
+  document.getElementById('ein-abs-btn').classList.toggle('act', m==='abs');
+  document.getElementById('ein-pct-btn').classList.toggle('act', m==='pct');
+  renderEinKatChart();
+}
+
+function renderEinnahmen(){
+  const yrs = EIN.years;
+  const byKat = EIN.byKat;
+  const ly = yrs.at(-1), py = yrs.at(-2);
+
+  // ── Summary cards
+  const totalLy = Object.values(byKat).reduce((s,v)=>s+(v[ly]||0),0);
+  const totalPy = Object.values(byKat).reduce((s,v)=>s+(v[py]||0),0);
+  const kredLy  = (byKat['Kreditaufnahme']||{})[ly]||0;
+  const taxLy   = ((byKat['Gemeinschaftsteuern']||{})[ly]||0) + ((byKat['Bundessteuern']||{})[ly]||0);
+  const kredShare = totalLy>0 ? (kredLy/totalLy*100) : 0;
+  const taxShare  = totalLy>0 ? (taxLy/totalLy*100)  : 0;
+
+  document.getElementById('ein-stats').innerHTML = `
+    <div class="stat gold">
+      <div class="stat-label">Gesamteinnahmen ${ly}</div>
+      <div class="stat-value c-gold">${fmt(totalLy)}</div>
+      <div class="stat-sub">${fmtPct((totalLy-totalPy)/totalPy*100)} ggü. ${py}</div>
+    </div>
+    <div class="stat red">
+      <div class="stat-label">davon Steuern ${ly}</div>
+      <div class="stat-value c-red">${fmt(taxLy)}</div>
+      <div class="stat-sub">${taxShare.toFixed(1)} % der Einnahmen</div>
+    </div>
+    <div class="stat gray">
+      <div class="stat-label">davon Kreditaufnahme ${ly}</div>
+      <div class="stat-value c-gray">${fmt(kredLy)}</div>
+      <div class="stat-sub">${kredShare.toFixed(1)} % der Einnahmen</div>
+    </div>`;
+
+  renderEinKatChart();
+  renderEinTopChart();
+  renderEinGemeinschaftChart();
+  renderEinTable();
+}
+
+function renderEinKatChart(){
+  const yrs = EIN.years;
+  const byKat = EIN.byKat;
+  const kats = Object.keys(KAT_COLORS).filter(k => byKat[k]);
+
+  const yearTotals = yrs.map(y => kats.reduce((s,k)=>s+(byKat[k]?.[y]||0),0));
+
+  const datasets = kats.map(k => ({
+    label: k,
+    data: yrs.map((y,i) => {
+      const v = byKat[k]?.[y] || 0;
+      return einMode==='pct' ? (yearTotals[i]>0 ? v/yearTotals[i]*100 : 0) : v/1e6;
+    }),
+    backgroundColor: KAT_COLORS[k] || '#aaa',
+    borderRadius: 0, borderSkipped: false,
+  }));
+
+  if(charts['ein-kat']) charts['ein-kat'].destroy();
+  charts['ein-kat'] = new Chart(document.getElementById('chart-ein-kat'),{
+    type:'bar',
+    data:{ labels: yrs.map(String), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } },
+        tooltip:{ callbacks:{
+          label: ctx => {
+            const y = EIN.years[ctx.dataIndex];
+            const raw = byKat[ctx.dataset.label]?.[y] || 0;
+            const tot = yearTotals[ctx.dataIndex] || 1;
+            return ` ${ctx.dataset.label}: ${fmt(raw)} (${(raw/tot*100).toFixed(1)} %)`;
+          }
+        }}
+      },
+      scales:{
+        x:{ stacked:true },
+        y:{ stacked:true, ticks:{ callback: v => einMode==='pct' ? v.toFixed(0)+' %' : v.toFixed(0)+' Mrd.' }, title:{ display:true, text: einMode==='pct'?'Anteil %':'Mrd. €' } }
+      }
+    }
+  });
+}
+
+// Gemeinschaftsteuern component names as they appear in topTitel
+const GEM_NAMES = new Set([
+  'Lohnsteuer','Umsatzsteuer','Einfuhrumsatzsteuer',
+  'Einkommensteuer','Körperschaftsteuer','Kapitalertragsteuer',
+  'Solidaritätszuschlag','Gewerbesteuerumlage'
+]);
+const GEM_COLORS_MAP = {
+  'Lohnsteuer':          '#1565c0',
+  'Umsatzsteuer':        '#0288d1',
+  'Einfuhrumsatzsteuer': '#26a69a',
+  'Einkommensteuer':     '#5c6bc0',
+  'Körperschaftsteuer':  '#7986cb',
+  'Kapitalertragsteuer': '#4fc3f7',
+  'Solidaritätszuschlag':'#80cbc4',
+  'Gewerbesteuerumlage': '#90a4ae',
+};
+
+function renderEinGemeinschaftChart(){
+  const yrs = EIN.years;
+  const gemItems = EIN.topTitel.filter(t => GEM_NAMES.has(t.name));
+  gemItems.sort((a,b) => (b[String(yrs.at(-1))]||0) - (a[String(yrs.at(-1))]||0));
+
+  const datasets = gemItems.map(t => ({
+    label: t.name,
+    data: yrs.map(y => t[String(y)] ? t[String(y)]/1e6 : null),
+    backgroundColor: GEM_COLORS_MAP[t.name] || '#90a4ae',
+    borderRadius: 3, borderSkipped: false,
+  }));
+
+  if(charts['ein-gem']) charts['ein-gem'].destroy();
+  charts['ein-gem'] = new Chart(document.getElementById('chart-ein-gem'),{
+    type:'bar',
+    data:{ labels: yrs.map(String), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } },
+        tooltip:{ callbacks:{
+          label: ctx => {
+            const raw = ctx.dataset.data[ctx.dataIndex];
+            return raw != null ? ` ${ctx.dataset.label}: ${(raw).toFixed(1)} Mrd. €` : ` ${ctx.dataset.label}: —`;
+          }
+        }}
+      },
+      scales:{
+        x:{ stacked:true },
+        y:{ stacked:true, ticks:{ callback: v => v.toFixed(0)+' Mrd.' }, title:{ display:true, text:'Mrd. €' } }
+      }
+    }
+  });
+}
+
+let einTopView = 'line';
+
+function setEinTopView(v){
+  einTopView = v;
+  document.getElementById('ein-top-line-btn').classList.toggle('act', v==='line');
+  document.getElementById('ein-top-hm-btn').classList.toggle('act',   v==='heatmap');
+  document.getElementById('ein-top-line-wrap').style.display = v==='line'    ? '' : 'none';
+  document.getElementById('ein-top-hm-wrap').style.display   = v==='heatmap' ? '' : 'none';
+  if(v==='heatmap') renderEinTopHeatmap();
+}
+
+function renderEinTopChart(){
+  const yrs = EIN.years;
+  const top = EIN.topTitel;
+
+  // Filter out entries with no data
+  const active = top.filter(t => yrs.some(y => t[y]));
+
+  const datasets = active.map((t,i) => ({
+    label: t.name,
+    data: yrs.map(y => t[y] ? t[y]/1e6 : null),
+    borderColor: TOP_COLORS[i % TOP_COLORS.length],
+    backgroundColor: TOP_COLORS[i % TOP_COLORS.length]+'33',
+    borderWidth: 2,
+    pointRadius: 4,
+    tension: 0.3,
+    spanGaps: true,
+  }));
+
+  if(charts['ein-top']) charts['ein-top'].destroy();
+  charts['ein-top'] = new Chart(document.getElementById('chart-ein-top'),{
+    type:'line',
+    data:{ labels: yrs.map(String), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } },
+        tooltip:{ callbacks:{
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y!=null ? fmt(ctx.parsed.y*1e6) : '—'}`
+        }}
+      },
+      scales:{
+        y:{ ticks:{ callback: v => v.toFixed(0)+' Mrd.' }, title:{ display:true, text:'Mrd. €' } }
+      }
+    }
+  });
+}
+
+function renderEinTopHeatmap(){
+  const yrs = EIN.years;
+  const top = EIN.topTitel.filter(t => yrs.some(y => t[y]));
+
+  // Sort by latest year value descending
+  const ly = String(yrs.at(-1));
+  top.sort((a,b) => (b[ly]||0) - (a[ly]||0));
+
+  const yearPairs = yrs.slice(1).map((y,i) => ({ label:`→${String(y).slice(2)}`, from:yrs[i], to:y }));
+
+  document.getElementById('ein-top-hm-thead').innerHTML = `<tr>
+    <th class="hm-th-name">Einnahmeart</th>
+    <th style="text-align:right;min-width:100px;border-right:3px solid var(--border)">${yrs.at(-1)}</th>
+    ${yearPairs.map(p=>`<th>${p.label}</th>`).join('')}
+  </tr>`;
+
+  document.getElementById('ein-top-hm-tbody').innerHTML = top.map((t,i) => {
+    const color = TOP_COLORS[i % TOP_COLORS.length];
+    const valLy = t[ly] || 0;
+
+    const cells = yearPairs.map(p => {
+      const prev = t[String(p.from)] || 0;
+      const cur  = t[String(p.to)]   || 0;
+      if(!prev && !cur) return `<td class="hm-cell" style="background:#eee;color:#bbb">—</td>`;
+      if(!prev)         return `<td class="hm-cell" style="background:#eee;color:#999">neu</td>`;
+      const pct = (cur - prev) / prev * 100;
+      const bg  = heatColor(pct);
+      const fg  = heatTextColor(pct);
+      const tip = `${t.name}: ${fmt(prev)} → ${fmt(cur)}`;
+      return `<td class="hm-cell" style="background:${bg};color:${fg}" title="${tip}">${pct>0?'+':''}${pct.toFixed(0)}&thinsp;%</td>`;
+    }).join('');
+
+    return `<tr>
+      <td class="hm-name">
+        <span class="ep-dot" style="background:${color};flex-shrink:0"></span>
+        <span>${t.name}${tipIcon(TOP_TIPS[t.name]||'')}</span>
+      </td>
+      <td class="hm-cell hm-base" style="text-align:right;border-right:3px solid var(--border);color:${color};background:${color}18">${valLy>0?fmt(valLy):'—'}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+function renderEinTable(){
+  const yrs = EIN.years;
+  const byKat = EIN.byKat;
+  const kats = Object.keys(KAT_COLORS).filter(k => byKat[k]);
+  const yearTotals = yrs.map(y => kats.reduce((s,k)=>s+(byKat[k]?.[y]||0),0));
+
+  document.getElementById('ein-thead').innerHTML = `<tr>
+    <th>Kategorie</th>
+    ${yrs.map(y=>`<th style="text-align:right">${y}</th>`).join('')}
+    <th style="text-align:right">Δ ${yrs[0]}→${yrs.at(-1)}</th>
+  </tr>`;
+
+  const rows = kats.map(k => {
+    const vals = yrs.map(y => byKat[k]?.[y]||0);
+    const first = vals[0], last = vals.at(-1);
+    const delta = first>0 ? ((last-first)/first*100) : null;
+    const dColor = delta===null?'var(--muted)':delta>5?'var(--red)':delta<-5?'green':'var(--muted)';
+    return `<tr>
+      <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${KAT_COLORS[k]||'#aaa'};margin-right:6px;vertical-align:middle"></span>${k}${tipIcon(KAT_TIPS[k]||'')}</td>
+      ${vals.map((v,i)=>{
+        const pct = yearTotals[i]>0 ? (v/yearTotals[i]*100) : 0;
+        return `<td class="num">${v>0?fmt(v):'<span style="color:var(--muted)">—</span>'}<br><span style="font-size:.7rem;color:var(--muted)">${pct>0?pct.toFixed(1)+' %':''}</span></td>`;
+      }).join('')}
+      <td class="num" style="color:${dColor}">${delta!==null?fmtPct(delta):'—'}</td>
+    </tr>`;
+  });
+
+  // Totals row
+  const totFmt = yearTotals.map(v => `<td class="num"><b>${fmt(v)}</b></td>`).join('');
+  const totFirst = yearTotals[0], totLast = yearTotals.at(-1);
+  const totDelta = totFirst>0 ? fmtPct((totLast-totFirst)/totFirst*100) : '—';
+  rows.push(`<tr style="border-top:2px solid var(--border)">
+    <td><b>Gesamt</b></td>${totFmt}<td class="num"><b>${totDelta}</b></td></tr>`);
+
+  document.getElementById('ein-tbody').innerHTML = rows.join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════ Tooltip
+(function(){
+  const tip = document.createElement('div');
+  tip.id = 'tip-popup';
+  document.body.appendChild(tip);
+
+  function show(icon){
+    tip.textContent = icon.dataset.tip;
+    tip.style.display = 'block';
+    const r  = icon.getBoundingClientRect();
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    const gap = 8, margin = 10;
+    // Prefer above, fall back to below
+    let top = r.top - th - gap;
+    if(top < margin) top = r.bottom + gap;
+    // Center horizontally on icon, then clamp to viewport
+    let left = r.left + r.width / 2 - tw / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - tw - margin));
+    tip.style.top  = top  + 'px';
+    tip.style.left = left + 'px';
+  }
+
+  document.addEventListener('mouseover', e => {
+    const icon = e.target.closest('.tip-icon');
+    if(icon && icon.dataset.tip) show(icon);
+  });
+  document.addEventListener('mouseout', e => {
+    if(e.target.closest('.tip-icon')) tip.style.display = 'none';
+  });
+  document.addEventListener('scroll', () => { tip.style.display = 'none'; }, true);
+})();
+
+// ══════════════════════════════════════════════════════════════════════ Start
+init();
+</script>
+</body>
+</html>
