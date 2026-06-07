@@ -174,6 +174,20 @@
     .stream-leg-item{display:flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;padding:.15rem .3rem;border-radius:4px;transition:background .1s}
     .stream-leg-item:hover{background:var(--bg)}
     .stream-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+    /* ── Random fact card ── */
+    .fact-card{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:1rem;box-shadow:var(--sh);transition:opacity .18s,transform .18s}
+    .fact-icon{font-size:1.6rem;line-height:1;flex-shrink:0;margin-top:.1rem}
+    .fact-body{flex:1;min-width:0}
+    .fact-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#7c9bc4;margin-bottom:.35rem}
+    .fact-text{font-size:.9rem;line-height:1.55;color:#e8edf5;font-weight:400}
+    .fact-source{font-size:.68rem;color:#5a7a9a;margin-top:.5rem}
+    .fact-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.45rem .5rem;cursor:pointer;color:#7c9bc4;flex-shrink:0;display:flex;align-items:center;transition:background .15s,color .15s;align-self:center}
+    .fact-btn:hover{background:rgba(255,255,255,.15);color:#adc8e6}
+    @media(max-width:640px){
+      .fact-card{padding:1rem;gap:.75rem}
+      .fact-text{font-size:.85rem}
+    }
+
     /* ── Burger menu ── */
     .mob-nav{display:none}
     .burger-btn{background:none;border:none;cursor:pointer;padding:.3rem;color:var(--text);display:flex;align-items:center;border-radius:4px}
@@ -334,6 +348,23 @@
       <p>Ausgaben und Einnahmen des Bundes 2020–2026 · Beträge in Milliarden Euro (Sollwerte)</p>
     </div>
     <div class="card-grid" id="stats-cards"></div>
+
+    <!-- Random fact -->
+    <div class="fact-card" id="fact-card">
+      <div class="fact-icon">💡</div>
+      <div class="fact-body">
+        <p class="fact-label">Wusstest du?</p>
+        <p class="fact-text" id="fact-text"></p>
+        <p class="fact-source" id="fact-source"></p>
+      </div>
+      <button class="fact-btn" onclick="nextFact()" title="Andere Erkenntnis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+      </button>
+    </div>
+
     <div class="chart-card">
       <div class="chart-head">
         <h2>Ausgaben nach Jahr</h2>
@@ -885,6 +916,7 @@ function switchTab(tab){
 function setOvMode(m){ ovMode=m; document.getElementById('ov-abs').classList.toggle('act',m==='abs'); document.getElementById('ov-rel').classList.toggle('act',m==='rel'); renderMainChart(); }
 
 function renderUebersicht(){
+  showFact();
   const yrs = D.years, s = D.summary;
   const ly=yrs.at(-1), py=yrs.at(-2);
   const ld=s[ly], pd=s[py];
@@ -2033,6 +2065,123 @@ function renderEinTable(){
     <td><b>Gesamt</b></td>${totFmt}<td class="num"><b>${totDelta}</b></td></tr>`);
 
   document.getElementById('ein-tbody').innerHTML = rows.join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════ Facts
+const FACTS = [
+  {t:"Der Einzelplan 11 (Arbeit & Soziales) ist mit 197,3 Mrd. € der größte Einzelplan – er macht 28,4 % des gesamten Bundeshaushalts 2026 aus.",s:"EP 11, 2026"},
+  {t:"Allein der Bundeszuschuss zur Rentenversicherung beträgt 2026 rund 140,0 Mrd. € – das übersteigt das gesamte Verteidigungsbudget (108,6 Mrd. €).",s:"EP 11, EP 14, 2026"},
+  {t:"Das Verteidigungsbudget hat sich von 2020 (45,1 Mrd. €) bis 2026 (108,6 Mrd. €) mehr als verdoppelt – ein Anstieg von 141 % in sechs Jahren.",s:"EP 14, 2020–2026"},
+  {t:"Der Bundeshaushalt 2026 sieht eine Neuverschuldung von 181,5 Mrd. € vor – 26 % aller Ausgaben werden auf Kredit finanziert.",s:"Einnahmen, 2026"},
+  {t:"2020 hatte der Bund die Schwarze Null ohne neue Schulden; 2021 schnellten die Schulden auf 179,8 Mrd. € – ein historischer Rekord bis dahin.",s:"Einnahmen, 2020–2021"},
+  {t:"Die Zinsausgaben des Bundes explodierten von 5,9 Mrd. € (2021) auf 39,9 Mrd. € (2023) – eine Versechsfachung in nur zwei Jahren durch die Zinswende.",s:"EP 32, 2021–2023"},
+  {t:"Die Lohnsteuer bringt 2026 mit 121,4 Mrd. € mehr als 5-mal so viel wie die Körperschaftsteuer (22,7 Mrd. €) – Arbeitnehmer finanzieren den Staat weit stärker als Unternehmen.",s:"Einnahmen, 2026"},
+  {t:"Die Umsatzsteuer ist 2026 mit 155,5 Mrd. € die größte Einzelsteuer – größer als der gesamte Sozial- und Verteidigungsetat zusammen.",s:"Einnahmen, 2026"},
+  {t:"Der Solidaritätszuschlag existiert auch 2026 noch und bringt 6,6 Mrd. €, da er nur für Spitzenverdiener abgeschafft wurde.",s:"Einnahmen, 2026"},
+  {t:"Die Versicherungsteuer (20,2 Mrd. €) übersteigt 2026 die Tabaksteuer (17,1 Mrd. €) – Versicherungspolicen finanzieren den Staat mehr als Zigaretten.",s:"Einnahmen, 2026"},
+  {t:"Die Energiesteuer sank trotz Inflation von 40,6 Mrd. € (2020) auf 36,5 Mrd. € (2026) – ein Zeichen für sinkenden Kraftstoffverbrauch in Deutschland.",s:"Einnahmen, 2020 & 2026"},
+  {t:"Die CO₂-Bepreisung spülte 2023 erst 8,6 Mrd. € in den Haushalt; bis 2026 verdoppelte sie sich auf 16,7 Mrd. €.",s:"Einnahmen, 2023–2026"},
+  {t:"Die Kfz-Steuer schwankte von 2020 (9,49 Mrd. €) bis 2026 (9,62 Mrd. €) kaum – der Fahrzeugbestand bleibt konstant trotz E-Auto-Boom.",s:"Einnahmen, 2020–2026"},
+  {t:"Der Gesamthaushalt 2023 betrug 812,5 Mrd. € – fast doppelt so viel wie normal, weil allein der Wirtschaftsstabilisierungsfonds (164,9 Mrd. €) als Sondervermögen darin erschien.",s:"EP 60, 2023"},
+  {t:"Das Gesundheitsministerium gab 2022 mit 64,4 Mrd. € mehr aus als das Verteidigungsministerium (50,4 Mrd. €) – getrieben durch 50,2 Mrd. € für die GKV.",s:"EP 15 & EP 14, 2022"},
+  {t:"Der COVID-Etat für Prävention und Gesundheit betrug 2022 noch 9,6 Mrd. €; 2026 sind es nur noch 0,73 Mrd. € – ein Rückgang um 92 %.",s:"EP 15, 2022 & 2026"},
+  {t:"Das Verhältnis Verteidigung zu Entwicklungshilfe hat sich radikal verändert: 2020 gab der Bund 4,1-mal so viel für Rüstung wie für Entwicklung aus, 2026 bereits 10,8-mal so viel.",s:"EP 14 & EP 23, 2020 & 2026"},
+  {t:"Das Justizministerium deckt 62 % seiner Ausgaben durch eigene Einnahmen – Gerichts- und Registergebühren machen es zum am besten 'finanzierten' Ministerium.",s:"EP 07, 2026"},
+  {t:"Die Bundespolizei kostet 2026 mit 5,1 Mrd. € fast so viel wie das gesamte Auswärtige Amt (6,0 Mrd. €).",s:"EP 06 & EP 05, 2026"},
+  {t:"Der BND erhält 2026 ein Budget von 1,51 Mrd. € – 54 % mehr als 2020 (0,98 Mrd. €).",s:"EP 04, 2020 & 2026"},
+  {t:"Die militärischen Beschaffungsausgaben der Bundeswehr verdreifachten sich: von 14,0 Mrd. € (2020) auf 40,4 Mrd. € (2026).",s:"EP 14, 2020 & 2026"},
+  {t:"Das Sondervermögen 'Infrastruktur und Klimaneutralität' erscheint 2026 mit 58,1 Mrd. € im Haushalt – mehr als das doppelte des gesamten Verkehrsministeriums (27,9 Mrd. €).",s:"EP 60 & EP 12, 2026"},
+  {t:"Die Personalausgaben machen 2026 nur noch 9,9 % des Verteidigungsetats aus – 2020 waren es noch 18,4 %. Das Budget verschiebt sich dramatisch hin zu Waffen und Material.",s:"EP 14, 2020 & 2026"},
+  {t:"Das Bundesverfassungsgericht bekommt 2026 gerade einmal 46,4 Mio. € – das ist ein Hundertstel des Verteidigungsbudgets.",s:"EP 19, 2026"},
+  {t:"Der Bundesrat – die zweite Parlamentskammer – kommt mit einem Jahresetat von 41,0 Mio. € (2026) aus; weniger als das Budget des Bundesarchivs (200 Mio. €).",s:"EP 03, 2026"},
+  {t:"Der Bundespräsident kostet den Steuerzahler 2026 rund 67,4 Mio. €, davon fließen gerade 103.000 € als Einnahmen zurück – eine Deckungsquote von 0,15 %.",s:"EP 01, 2026"},
+  {t:"Das Bürgergeld und Arbeitslosengeld kosten 2026 zusammen rund 55,5 Mrd. €; die Rente mit 140,0 Mrd. € ist mehr als 2,5-mal so teuer.",s:"EP 11, 2026"},
+  {t:"Das Verkehrsministerium generiert 2026 selbst 14,7 Mrd. € Einnahmen (v. a. Mautgebühren) – mehr als die Hälfte seiner Ausgaben (27,9 Mrd. €) finanziert es so selbst.",s:"EP 12, 2026"},
+  {t:"2024 brachte die Autobahnmaut (15,2 Mrd. €) erstmals mehr ein als die Bundesfernstraßen kosteten (12,8 Mrd. €) – Straßen als Nettoeinnahmequelle.",s:"EP 12, 2024"},
+  {t:"Der Bundeshaushalt für Schienenwege schwankte extrem: 2024 wurden 16,4 Mrd. € für die Bahn-Sanierung ausgegeben, 2026 nur noch 2,7 Mrd. €.",s:"EP 12, 2024 & 2026"},
+  {t:"Das Bundesfinanzministerium gibt 2026 selbst 10,8 Mrd. € aus – fast doppelt so viel wie das Justizministerium, obwohl es keine Sozialleistungen erbringt.",s:"EP 08, 2026"},
+  {t:"Der Staat zahlt 2026 mehr Zinsen (30,3 Mrd. €) als er für das gesamte Forschungsministerium (21,8 Mrd. €) ausgibt.",s:"EP 32 & EP 30, 2026"},
+  {t:"Deutschland leiht sich 2026 wieder 181,5 Mrd. € – mehr als im Corona-Krisenjahr 2021 (179,8 Mrd. €) und fast das 8-Fache des Forschungsetats.",s:"Einnahmen, 2026"},
+  {t:"Das Kanzleramt gibt 2026 mehr für Kultur und Medien (2,35 Mrd. €) aus als für den Auslandsgeheimdienst BND (1,51 Mrd. €).",s:"EP 04, 2026"},
+  {t:"Der Bundeszuschuss zur GKV betrug 2022 auf dem COVID-Höhepunkt 50,2 Mrd. €; 2026 sind es nur noch 16,8 Mrd. € – ein Rückgang um zwei Drittel.",s:"EP 15, 2022 & 2026"},
+  {t:"Das Entwicklungsministerium gibt 2026 mehr für bilaterale Entwicklungszusammenarbeit (4,64 Mrd. €) aus als das Wirtschaftsministerium für Innovationsförderung (1,85 Mrd. €).",s:"EP 23 & EP 09, 2026"},
+  {t:"Gemeinschaftsteuern (Lohn-, Einkommensteuer, Umsatzsteuer) machen 2026 rund 344,1 Mrd. € aus – die reinen Bundessteuern kommen nur auf 86,6 Mrd. €.",s:"Einnahmen, 2026"},
+  {t:"Das neue Digitalministerium (EP 24) existierte 2025 mit gerade 11,2 Mio. € als Miniministerium; 2026 springt sein Etat auf 1,36 Mrd. € – Faktor 121 in einem Jahr.",s:"EP 24, 2025 & 2026"},
+  {t:"Das Sondervermögen 'Klima- und Transformationsfonds' (KTF) betrug 2023 noch 100,8 Mrd. €; nach dem BVerfG-Urteil schrumpfte es auf 34,8 Mrd. € – ein Verlust von 65 %.",s:"EP 60, 2023 & 2026"},
+  {t:"Deutschlands Bruttobeitrag zur EU liegt 2026 bei rund 43,6 Mrd. €; gleichzeitig fließen rund 10,6 Mrd. € EU-Mittel zurück – die Nettozahllast beträgt rund 33 Mrd. €.",s:"EP 60 & Einnahmen, 2026"},
+  {t:"Der Zinsaufwand 2023 (39,9 Mrd. €) war höher als Forschungsetat (21,5 Mrd. €) und Entwicklungshilfe (12,2 Mrd. €) zusammengerechnet.",s:"EP 32, EP 30 & EP 23, 2023"},
+  {t:"Der Gesamthaushalt 2026 (694,3 Mrd. €) ist gegenüber 2020 (362,0 Mrd. €) fast doppelt so groß – ein Wachstum von 92 % in sechs Jahren.",s:"Gesamthaushalt, 2020 & 2026"},
+  {t:"Die Großforschungseinrichtungen (Helmholtz, Leibniz etc.) erhalten 2026 rund 8,23 Mrd. € – mehr als der gesamte Entwicklungshilfeetat für multilaterale Projekte.",s:"EP 30, 2026"},
+  {t:"Das Bundeskartellamt erwirtschaftet durch Bußgelder rund 190 Mio. € Einnahmen bei nur 60 Mio. € Ausgaben – eine der wenigen Bundesbehörden mit echtem 'Gewinn'.",s:"EP 09, 2026"},
+  {t:"Der Umweltetat (EP 16) sank von 2,97 Mrd. € (2020) auf 2,17 Mrd. € (2022) und erholt sich erst 2026 wieder auf 2,77 Mrd. € – Klimaschutz spiegelt sich kaum im Kernhaushalt wider.",s:"EP 16, 2020–2026"},
+  {t:"Die Physikalisch-Technische Bundesanstalt (Hüterin der deutschen Maßeinheiten) erhält 2026 rund 251 Mio. € – mehr als Bundesverfassungsgericht und Bundespräsidialamt zusammen.",s:"EP 09, EP 19 & EP 01, 2026"},
+  {t:"Das Renten-Sonderthema Landwirtschaft: Die 'Alterssicherung der Landwirte' (kap 1001) kostet konstant rund 4,1 Mrd. € jährlich – ein kaum bekannter Posten für die Bauer-Rente.",s:"EP 10, 2020–2026"},
+  {t:"Das BSI (Bundesamt für IT-Sicherheit) bekommt 2026 mit 379 Mio. € mehr als doppelt so viel wie 2020 (163 Mio. €) – Cybersicherheit wächst rasant im Staatsetat.",s:"EP 06, 2020 & 2026"},
+  {t:"Das Technische Hilfswerk erhält 2026 rund 728 Mio. € – mehr als doppelt so viel wie 2020 (314 Mio. €). Zivilschutz wird nach den Katastrophenjahren massiv aufgestockt.",s:"EP 06, 2020 & 2026"},
+  {t:"Das Bundesamt für Bevölkerungsschutz (BBK) erhält 2026 rund 606 Mio. € – 3,6-mal so viel wie 2020 (170 Mio. €).",s:"EP 06, 2020 & 2026"},
+  {t:"Die Kreditaufnahme des Bundeswehr-Sondervermögens erscheint 2026 als 25,5 Mrd. € Bucheinnahmen im Verteidigungsetat – neue Schulden werden so als Einnahmen sichtbar.",s:"EP 14, 2026"},
+  {t:"Die Körperschaftsteuer brachte 2021 (14,5 Mrd. €) weniger als halb so viel wie 2022 (23,2 Mrd. €) – Corona-Verlustvorträge drückten die Unternehmenssteuer ein ganzes Jahr nach.",s:"Einnahmen, 2021 & 2022"},
+  {t:"Das Bundeskriminalamt wuchs von 794 Mio. € (2020) auf 1.240 Mio. € (2026) – ein Anstieg von 56 % in sechs Jahren, deutlich über der Inflationsrate.",s:"EP 06, 2020 & 2026"},
+  {t:"Der Verfassungsschutz BfV bekam 2026 mit 691 Mio. € fast 48 % mehr als 2020 (467 Mio. €).",s:"EP 06, 2020 & 2026"},
+  {t:"Das Familienministerium gibt 2026 rund 13,0 Mrd. € allein für Kindergeld, Elterngeld und ähnliche Leistungen aus – mehr als Umwelt- und Justizetats zusammen.",s:"EP 17, 2026"},
+  {t:"Die veranlagte Einkommensteuer (Selbstständige) bringt dem Bund 2026 nur 34,8 Mrd. € – Arbeitnehmer via Lohnsteuer zahlen das 3,5-Fache (121,4 Mrd. €).",s:"Einnahmen, 2026"},
+  {t:"Die Kapitalertragsteuer ist hochvolatil: 2021 nur 9,2 Mrd. €, 2022 sprang sie auf 16,1 Mrd. € – Börsenschwankungen treffen den Bundeshaushalt mit knapp 7 Mrd. € Ausschlag.",s:"Einnahmen, 2021 & 2022"},
+  {t:"Das Verkehrsministerium trägt die Autobahn-Maut als Einnahme: 14,7 Mrd. € fließen 2026 als Eigeneinnahmen zurück – das entspricht 53 % der eigenen Ausgaben.",s:"EP 12, 2026"},
+  {t:"Das Bundeswirtschaftsministerium gab 2023 während der Energiekrise 14,6 Mrd. € aus; 2026 sind es nur noch 5,9 Mrd. € – ein Einbruch von 60 % in drei Jahren.",s:"EP 09, 2023 & 2026"},
+  {t:"Die Raumfahrt erhält ab 2026 erstmals ein eigenes Kapitel im Forschungsetat mit 2,39 Mrd. € – Deutschland ist damit einer der größten nationalen Raumfahrtinvestoren Europas.",s:"EP 30, 2026"},
+  {t:"Der Bundesrechnungshof, der staatliche Haushaltswächter, bekommt 2026 selbst 202 Mio. € – Kontrollstrukturen haben ihren Preis.",s:"EP 20, 2026"},
+  {t:"Das Verwaltungseinnahmen des Bundes stiegen von 10,8 Mrd. € (2020) auf 34,5 Mrd. € (2025) – ein Plus von 220 %, getrieben durch Gebühren, Rückflüsse und Sonderposten.",s:"Einnahmen, 2020 & 2025"},
+  {t:"Die Autobahn-Maut (15,2 Mrd. €) übertraf 2024 erstmals die Ausgaben für Bundesfernstraßen (12,8 Mrd. €) – für ein Jahr 'verdienten' die Straßen Geld.",s:"EP 12, 2024"},
+  {t:"Der Anteil der Rente am Gesamthaushalt 2026: Die 140,0 Mrd. € für die Rentenversicherung entsprechen 20,2 % aller Bundesausgaben – jeder fünfte Euro geht in die Rente.",s:"EP 11, 2026"},
+  {t:"Das Verhältnis Soziales (EP 11) zu Verteidigung (EP 14) hat sich verändert: 2020 war Soziales 3,3-mal so groß; 2026 nur noch 1,8-mal.",s:"EP 11 & EP 14, 2020 & 2026"},
+  {t:"Negativzins-Paradox 2021: Die Verzinsung der Bundesschuld kostete nur 5,9 Mrd. € – der Staat zahlte kaum Zinsen, obwohl er Hunderte Milliarden schuldete.",s:"EP 32, 2021"},
+  {t:"Die Wehrforschung (Rüstungsforschung und Erprobung) bekommt 2026 rund 1,58 Mrd. €; die zivile Grundlagenforschung (8,33 Mrd. €) ist nur noch 5-mal so groß.",s:"EP 14 & EP 30, 2026"},
+  {t:"Der Umweltetat (EP 16) enthält 2026 Einnahmen von 1,26 Mrd. € aus der Finanzierung der Atomentsorgung – die Atomindustrie zahlt damit 45 % des gesamten Umweltetats.",s:"EP 16, 2026"},
+  {t:"Das Bundeswohnungsbauministerium (seit 2022) verbucht 2026 kaum Eigeneinnahmen: Nur 183 Mio. € fließen zurück bei 7,7 Mrd. € Ausgaben – Wohnungsbau ist reines Zuschussgeschäft.",s:"EP 25, 2026"},
+  {t:"Das Presse- und Informationsamt der Bundesregierung gibt 2026 rund 140 Mio. € für Regierungskommunikation aus – mehr als Bundesamt für Strahlenschutz und Bundesamt für Naturschutz zusammen.",s:"EP 04, 2026"},
+  {t:"Das Bundeskanzleramt finanziert den deutschen Spitzensport: 2026 fließen 386 Mio. € an den Beauftragten für Sport und Ehrenamt.",s:"EP 04, 2026"},
+  {t:"Das Bundesverfassungsgericht erzielt seit 2020 unverändert genau 40.000 € Einnahmen jährlich – die stabilste Einnahmeposition im gesamten Bundeshaushalt.",s:"EP 19, 2020–2026"},
+  {t:"Das Robert Koch-Institut erhält 2026 rund 210 Mio. € – 31 % mehr als 2020 (160 Mio. €). COVID hat dauerhaft mehr Mittel in die Pandemievorsorge verschoben.",s:"EP 15, 2020 & 2026"},
+  {t:"Der Bundeszuschuss zur Pflegeversicherung beträgt 2026 nur 3,3 Mrd. € – trotz demografischem Wandel und Pflegekrise sind das weniger als 2 % des gesamten Sozialetats.",s:"EP 15 & EP 11, 2026"},
+  {t:"Allgemeine Finanzverwaltung (EP 60) sammelt 2026 rund 387,2 Mrd. € Steuereinnahmen ein und transferiert gleichzeitig 186,3 Mrd. € weiter – das unsichtbare Nervensystem des Bundesfiskus.",s:"EP 60, 2026"},
+  {t:"Rückflüsse aus Entwicklungskrediten sanken von 869,8 Mio. € (2020) auf 678,9 Mio. € (2026) – Entwicklungsländer zahlen weniger zurück als früher.",s:"EP 23, 2020 & 2026"},
+  {t:"Aus Bundesimmobilien fließen 2026 nur 1,4 Mrd. € zurück – der staatliche Immobilienbesitz ist trotz massiver Wertsteigerungen kein nennenswerter Ertragsbringer.",s:"EP 60, 2026"},
+  {t:"Das Bundeswirtschaftsministerium gab 2020 noch 2,83 Mrd. € für Energie und Nachhaltigkeit aus; 2026 sind es nur noch 0,61 Mrd. € – Energiesubventionen wurden radikal zurückgefahren.",s:"EP 09, 2020 & 2026"},
+  {t:"Die militärischen Beschaffungen 2026 (19,5 Mrd. regulär + 25,5 Mrd. Sondervermögen = 45,0 Mrd. €) übertreffen das gesamte Verteidigungsbudget des Jahres 2020.",s:"EP 14, 2020 & 2026"},
+  {t:"NATO-Beiträge und internationale Einsatzkosten machen 2026 nur 1,9 % des Verteidigungsetats aus (2,02 Mrd. von 108,6 Mrd. €) – der Löwenanteil bleibt national.",s:"EP 14, 2026"},
+  {t:"Das Landwirtschaftsministerium leitet 2026 rund 4,45 Mrd. € EU-Agrarsubventionen durch (kap 1090) – fast 38 % seines gesamten Etats fließen direkt zu den Bauern.",s:"EP 10, 2026"},
+  {t:"Die Bundeswehr-Einnahmen wuchsen von 485,9 Mio. € (2020) auf 26,7 Mrd. € (2026) – Faktor 55 in sechs Jahren, erklärt durch Entnahmen aus dem 100-Mrd.-Sondervermögen.",s:"EP 14, 2020 & 2026"},
+  {t:"Das neue Digitalministerium hat 2026 einen Etat von 1,36 Mrd. € – das 121-Fache seines Startbudgets aus dem Vorjahr (11,2 Mio. €).",s:"EP 24, 2025 & 2026"},
+  {t:"Der parlamentarische Geheimdienst-Kontrollrat (EP 22) kommt 2026 mit nur 14,6 Mio. € aus – weniger als manche Gemeindeverwaltung ausgibt.",s:"EP 22, 2026"},
+  {t:"Bürgschaften und staatliche Gewährleistungen kosteten 2025 rund 3,93 Mrd. € – ein verstecktes Milliardenrisiko das kaum öffentlich diskutiert wird.",s:"EP 32, 2025"},
+  {t:"Das Bundesinstitut für Arzneimittel (BfArM) finanziert sich durch Zulassungsgebühren zu rund 57 % selbst – eine der am besten eigentfinanzierten Bundesbehörden.",s:"EP 15, 2026"},
+  {t:"Das Bundeskartellamt hatte 2026 rund 190 Mio. € Einnahmen (Bußgelder) bei nur 60 Mio. € Ausgaben – es ist die einzige Bundesbehörde, die durch ihren Betrieb 'Gewinn' macht.",s:"EP 09, 2026"},
+  {t:"Ein Vergleich aller Ministerien: Das Verteidigungsministerium überholte 2026 mit 108,6 Mrd. € erstmals alle Ressorts außer dem Sozialministerium – 2020 lag es noch auf Rang 4.",s:"Gesamthaushalt, 2020 & 2026"},
+  {t:"Das Landwirtschaftsministerium bezuschusst die Bauer-Rente: 'Alterssicherung der Landwirte' kostet konstant rund 4,1 Mrd. € jährlich – mehr als Bundesrat und Bundespräsidialamt zusammen.",s:"EP 10, 2026"},
+  {t:"Der Forschungsetat (EP 30) wuchs von 2020 bis 2026 um nur 19 % – während Soziales um 31 % und Rüstung um 141 % zulegten. Forschung verliert relativ an Priorität.",s:"EP 30, EP 11 & EP 14, 2020–2026"},
+  {t:"Deutschlands Nettozahlung an die EU (33 Mrd. €) entspricht 2026 mehr als dem gesamten Bildungsministerium (21,8 Mrd. €) und Entwicklungshilfeministerium (10,1 Mrd. €) zusammen.",s:"EP 60 & EP 30 & EP 23, 2026"},
+  {t:"Die Gewerbesteuerumlage (Bundes-Anteil an der Gemeindesteuer) bringt 2026 nur noch 2,8 Mrd. € – die schwächste Gemeinschaftsteuer, kaum bekannt.",s:"Einnahmen, 2026"},
+  {t:"Das Bundesgesundheitsministerium gab 2022 mit 64,4 Mrd. € mehr aus als jemals zuvor – und mehr als das Verteidigungsministerium. 2026 sind es wieder 'nur' 21,8 Mrd. €.",s:"EP 15, 2022 & 2026"},
+  {t:"Raumfahrt im Bundesetat: 2026 erstmals mit eigenem Kapitel, dotiert mit 2,39 Mrd. € – damit gibt der Bund mehr für Raumfahrt aus als für das Bundespräsidialamt (67 Mio. €).",s:"EP 30, 2026"},
+  {t:"Das Bundesamt für Migration und Flüchtlinge (BAMF) bekommt 2026 rund 1,1 Mrd. €, während die Einnahmen aus Gebühren nur rund 90 Mio. € betragen – Migration kostet weit mehr als sie einbringt.",s:"EP 06, 2026"},
+  {t:"Der Verfassungsschutz BfV bekam 2026 mit 691 Mio. € fast das Anderthalbfache wie 2020 (467 Mio. €) – innere Sicherheit gewinnt budgetär deutlich an Gewicht.",s:"EP 06, 2020 & 2026"},
+  {t:"Das Bundeswirtschaftsministerium gibt 2026 mehr für Exportkreditgarantien (Hermes-Bürgschaften, ~850 Mio. €) aus als für direkte Innovationsförderung für KMU.",s:"EP 09, 2026"},
+  {t:"Deutschland nehme 2026 mehr Schulden auf (181,5 Mrd. €) als der gesamte Bundeshaushalt des Jahres 2000 groß war – der Haushalt hat sich in 26 Jahren mehr als verdreifacht.",s:"Einnahmen & Gesamthaushalt, 2026"},
+];
+
+let factIdx = Math.floor(Math.random() * FACTS.length);
+
+function showFact(){
+  const f = FACTS[factIdx];
+  document.getElementById('fact-text').textContent = f.t;
+  document.getElementById('fact-source').textContent = 'Quelle: ' + f.s + ' · ' + (factIdx+1) + ' von ' + FACTS.length;
+}
+function nextFact(){
+  factIdx = (factIdx + 1) % FACTS.length;
+  const el = document.getElementById('fact-card');
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(4px)';
+  setTimeout(()=>{ showFact(); el.style.opacity=''; el.style.transform=''; }, 180);
 }
 
 // ══════════════════════════════════════════════════════════════════════ Tooltip
